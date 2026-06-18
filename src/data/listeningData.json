@@ -1,0 +1,25 @@
+[
+  {
+    "title": "Cuộc hẹn ở quán cà phê",
+    "subtitle": "Thời lượng: 02:45 • Mức độ: Trung cấp",
+    "fullDuration": 165,
+    "dialog": [
+      { "time": 5, "jp": "田中さん、お久しぶりです。お元気でしたか？", "vi": "Chào anh Tanaka, lâu rồi không gặp. Anh có khỏe không?" },
+      { "time": 12, "jp": "はい、おかげさまで。今日は何をご注文なさいますか？", "vi": "Vâng, nhờ trời tôi vẫn khỏe. Hôm nay anh muốn dùng món gì?" },
+      { "time": 20, "jp": "実は、昨日から少し喉 của 調子がわるくて...", "jpActual": "実は、昨日から少し喉の調子が悪くて...", "vi": "Thực ra từ hôm qua cổ họng của tôi hơi khó chịu một chút..." },
+      { "time": 35, "jp": "あ、それはお大事に。温かいゆず茶はいかがでしょうか？", "vi": "Ôi, vậy anh nhớ giữ gìn sức khỏe nhé. Dùng trà bưởi nóng nhé?" }
+    ],
+    "question": "1. Tại sao nhân vật chính lại cân nhắc việc chọn đồ uống nóng?",
+    "options": [
+      { "key": "A", "text": "Vì thời tiết bên ngoài đang rất lạnh.", "correct": false },
+      { "key": "B", "text": "Vì cô ấy/anh ấy cảm thấy đau họng từ hôm qua.", "correct": true },
+      { "key": "C", "text": "Vì trà bưởi đang được giảm giá.", "correct": false }
+    ],
+    "grammarTips": [
+      { "badge": "は", "title": "Trợ từ tương phản", "desc": "Lưu ý cách dùng \"は\" trong câu để nhấn mạnh sự thay đổi trạng thái sức khỏe của nhân vật." },
+      { "badge": "↗", "title": "Ngữ điệu nghi vấn", "desc": "Nghe kỹ sự lên giọng ở cuối câu của nhân vật phục vụ khi đưa ra gợi ý (suggestion)." },
+      { "badge": "~ね", "title": "Cảm thán chia sẻ", "desc": "Trợ từ \"ね\" thể hiện sự đồng cảm của người nghe đối với tình trạng đau họng của bạn mình." }
+    ],
+    "senseiAdvice": "Bạn đang nghe rất tốt ở tốc độ 1x. Hãy thử nghe lại ở 1.5x để rèn luyện phản xạ nhanh với người bản ngữ!"
+  }
+]

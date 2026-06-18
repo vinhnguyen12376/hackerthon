@@ -1,0 +1,23 @@
+{
+  "roadmapTitle": "Lộ trình JLPT: Cấp độ 2 / 5",
+  "aiRec": {
+    "badge": "KHÁI NIỆM KHUYÊN DÙNG",
+    "title": "Thể bị động (受身)",
+    "desc": "Dựa trên bài viết gần đây của bạn, việc sử dụng các thể bị động 'trực tiếp' và 'gián tiếp' cần được rèn luyện sâu sắc. Nắm vững 'bị động hại' hôm nay."
+  },
+  "kanjiCore": {
+    "kanji": "学",
+    "meaning": "\"Học - Học tập, khoa học, trường học\"",
+    "retained": "Đã thuộc: 85%",
+    "priority": "Độ ưu tiên: Cao"
+  },
+  "skills": [
+    { "name": "Kanji (Hán tự)", "mastery": "42%", "desc": "Chiết tự bộ thủ, thứ tự nét viết và biến thể." },
+    { "name": "Vocabulary (Từ vựng)", "mastery": "68%", "desc": "Tập hợp từ vựng và collocations ngữ cảnh." },
+    { "name": "Grammar (Ngữ pháp)", "mastery": "21%", "desc": "Sử dụng các trợ từ nâng cao và cú pháp câu." },
+    { "name": "Listening (Nghe hiểu)", "mastery": "89%", "desc": "Âm thanh mẫu và ngữ điệu trong đàm thoại." },
+    { "name": "Reading (Đọc hiểu)", "mastery": "55%", "desc": "Tốc độ đọc lướt và bắt ý nghĩa theo ngữ cảnh." },
+    { "name": "Speaking (Luyện nói)", "mastery": "12%", "desc": "Sử dụng kính ngữ và phản xạ nói tự nhiên." },
+    { "name": "Writing (Luyện viết)", "mastery": "31%", "desc": "Bút pháp, viết luận và sửa lỗi chính tả." }
+  ]
+}

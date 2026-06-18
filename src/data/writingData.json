@@ -1,0 +1,46 @@
+{
+  "promptTitleEn": "Hãy miêu tả món ăn Nhật Bản yêu thích của bạn",
+  "promptTitleJp": "好きな日本料理について説明してください。なぜそれが好きなのか、đang ăn ở đâu và lý do thích để cùng chia sẻ nhé.",
+  "tags": ["JLPT N2", "Văn hóa", "200+ từ"],
+  "initialText": "私の大好きな日本料理は、お好み焼きです。大坂で初めて食べた時、その味に感動しました。お好み焼きは「日本のピザ」とも呼ばれていますが、中にはキャベツや豚肉、そしてたっぷりのソースが入っていて、とても美味しいです。特に、焼きたての熱いお好み焼きを食べるのが一番の贅沢です。友達と一緒に大きな鉄板を囲んで食べる時間は、私にとって大切な思い出です。",
+  "issues": [
+    {
+      "id": "issue-1",
+      "type": "kanji",
+      "label": "Lỗi Chữ Hán",
+      "original": "大坂",
+      "corrected": "大阪",
+      "desc": "Trong ngữ cảnh này, tên thành phố Osaka phải viết bằng chữ Hán là 大阪 (Đại Phản), còn 大坂 (Đại Pha) là cách viết cũ từ thời Edo và ít khi được dùng ngày nay.",
+      "solved": false
+    },
+    {
+      "id": "issue-2",
+      "type": "vocab",
+      "label": "Gợi Ý Từ Vựng",
+      "original": "味",
+      "corrected": "味わい",
+      "desc": "Hãy cân nhắc sử dụng từ 味わい (ajiwai) để miêu tả hương vị một cách sâu sắc, tinh tế và mang sắc thái văn chương hơn thay vì chỉ dùng từ 味 (aji) thông thường.",
+      "solved": false
+    },
+    {
+      "id": "issue-3",
+      "type": "grammar",
+      "label": "Lỗi Ngữ Pháp",
+      "original": "熱い",
+      "corrected": "熱々",
+      "desc": "Sử dụng cụm từ tượng hình 熱々 (atsu-atsu) thay vì tính từ 熱い (atsui) để nhấn mạnh tính chất \"nóng hổi, vừa thổi vừa ăn\" của món ăn nướng trên bàn sắt.",
+      "solved": false
+    },
+    {
+      "id": "issue-4",
+      "type": "style",
+      "label": "Cải Thiện Phong Cách",
+      "original": "大切",
+      "corrected": "かけがえのない大切",
+      "desc": "Thêm cụm từ \"かけがえのない\" (không thể thay thế) trước \"大切\" để nâng cao cảm xúc biểu đạt, làm cho kỷ niệm của bạn trở nên độc bản và quý giá hơn.",
+      "solved": false
+    }
+  ],
+  "aiSuggestion": "Gợi ý từ AI: \"Thử thêm một câu về nhà hàng yêu thích của bạn.\"",
+  "appendedText": "\n私の一番お勧めのお店は、道頓堀にある「鶴橋風月」です。"
+}

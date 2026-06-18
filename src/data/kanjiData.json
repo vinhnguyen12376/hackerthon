@@ -1,0 +1,48 @@
+[
+  {
+    "kanji": "権",
+    "sinoViet": "QUYỀN",
+    "meaning": "Quyền lợi, quyền lực",
+    "onyomi": "ケン (Ken)",
+    "kunyomi": "おもり (Omori)",
+    "question": "Đâu là ý nghĩa chính xác nhất của Kanji 「権」 trong ngữ cảnh này?",
+    "options": [
+      { "key": "A", "text": "Quyền lực / Quyền lợi", "correct": true },
+      { "key": "B", "text": "Kiểm tra / Xem xét", "correct": false },
+      { "key": "C", "text": "Trách nhiệm / Nghĩa vụ", "correct": false },
+      { "key": "D", "text": "Sức mạnh thể chất", "correct": false }
+    ],
+    "mnemonicText": "Hãy tưởng tượng bộ Mộc (木) là một cây cổ thụ vững chãi, bên phải là bộ Cân (𦫿) tượng trưng cho sự cân đo đong đếm. Chỉ người có Quyền (権) mới có thể giữ cân bằng.",
+    "mnemonicImg": "/kanji_mnemonic.png",
+    "mnemonicImgText": "\"Mộc (cây) đứng cạnh cán tiểu ly, thể hiện sự công bằng và quyền lực.\"",
+    "vocab": [
+      { "word": "権利", "reading": "Kenri", "mean": "Quyền lợi", "level": "N3" },
+      { "word": "政権", "reading": "Seiken", "mean": "Chính quyền", "level": "N2" },
+      { "word": "権力", "reading": "Kenryoku", "mean": "Quyền lực", "level": "N2" }
+    ],
+    "tip": "Hầu hết các từ ghép Hán tự chứa chữ \"Quyền\" đều mang sắc thái trang trọng, pháp lý. Hãy chú ý khi dùng trong bối cảnh chính trị hoặc xã hội!"
+  },
+  {
+    "kanji": "厳",
+    "sinoViet": "NGHIÊM",
+    "meaning": "Nghiêm túc, nghiêm khắc",
+    "onyomi": "ゲン (Gen) / ゴン (Gon)",
+    "kunyomi": "きび.しい (Kibi.shii)",
+    "question": "Đâu là âm Onyomi chính xác của Kanji 「厳」 (Nghiêm)?",
+    "options": [
+      { "key": "A", "text": "カン (Kan)", "correct": false },
+      { "key": "B", "text": "ゲン (Gen)", "correct": true },
+      { "key": "C", "text": "セン (Sen)", "correct": false },
+      { "key": "D", "text": "ユウ (Yuu)", "correct": false }
+    ],
+    "mnemonicText": "Chữ Hán gồm bộ Xưởng (厂) biểu thị sườn núi hiểm trở, bên dưới là bộ Cảm (敢) dũng cảm. Đứng trên sườn núi đá hiểm trở đòi hỏi sự Nghiêm khắc và dũng cảm.",
+    "mnemonicImg": "/kanji_mnemonic.png",
+    "mnemonicImgText": "\"Đứng trên vách đá hiểm trở đòi hỏi tinh thần kỷ luật nghiêm ngặt.\"",
+    "vocab": [
+      { "word": "厳しい", "reading": "Kibishii", "mean": "Nghiêm khắc, khó khăn", "level": "N3" },
+      { "word": "厳重", "reading": "Genjuu", "mean": "Nghiêm ngặt, cẩn mật", "level": "N2" },
+      { "word": "厳か", "reading": "Ogosoka", "mean": "Trang nghiêm, uy nghi", "level": "N1" }
+    ],
+    "tip": "Từ \"厳しい\" (kibishii) ngoài nghĩa nghiêm khắc với con người còn dùng để tả tình trạng khó khăn gay gắt."
+  }
+]

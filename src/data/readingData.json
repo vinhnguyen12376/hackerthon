@@ -1,0 +1,63 @@
+[
+  {
+    "title": "日本の文化と技術",
+    "titleFurigana": {
+      "日本": "にほん",
+      "文化": "ぶんか",
+      "技術": "ぎじゅつ"
+    },
+    "passageMarkup": [
+      { "text": "最近", "ruby": "さいきん" },
+      { "text": "、" },
+      { "text": "日本", "ruby": "にほん" },
+      { "text": "では" },
+      { "text": "伝統的な", "ruby": "でんとうてきな", "isUnderline": true, "wordMean": "伝統的 (Truyền thống): Mang tính kế thừa các giá trị cổ truyền qua nhiều thế hệ." },
+      { "text": "工芸", "ruby": "こうげい" },
+      { "text": "ot" },
+      { "text": "先端技術", "ruby": "せんたんぎじゅつ" },
+      { "text": "が" },
+      { "text": "融合", "ruby": "ゆうごう" },
+      { "text": "しています。例えば、" },
+      { "text": "京都", "ruby": "きょうと" },
+      { "text": "の" },
+      { "text": "古い", "ruby": "ふるい" },
+      { "text": "建物", "ruby": "たてもの" },
+      { "text": "に" },
+      { "text": "最新", "ruby": "さいしん" },
+      { "text": "のセンサーを" },
+      { "text": "導入", "ruby": "どうn" },
+      { "text": "し、" },
+      { "text": "省エネ", "ruby": "しょうえね" },
+      { "text": "を" },
+      { "text": "実現", "ruby": "じつげん" },
+      { "text": "する" },
+      { "text": "試み", "ruby": "こころみ" },
+      { "text": "が" },
+      { "text": "注目", "ruby": "ちゅうもく" },
+      { "text": "されています。このような動きは、" },
+      { "text": "環境保護", "ruby": "かんきょうほご" },
+      { "text": "だけでなく、" },
+      { "text": "文化遺産", "ruby": "ぶんかいさん" },
+      { "text": "を" },
+      { "text": "次の", "ruby": "つぎの" },
+      { "text": "世代", "ruby": "せだい" },
+      { "text": "に" },
+      { "text": "継承", "ruby": "けいしょう", "isUnderline": true, "wordMean": "継承 (Thừa kế / Kế thừa): Tiếp nhận và phát huy di sản hoặc trách nhiệm từ thế hệ trước." },
+      { "text": "するための" },
+      { "text": "重要な", "ruby": "じゅうような" },
+      { "text": "役割", "ruby": "やくわり" },
+      { "text": "を" },
+      { "text": "果たして", "ruby": "はたして" },
+      { "text": "います。" }
+    ],
+    "question": "Đâu là ví dụ cụ thể về sự kết hợp giữa truyền thống và công nghệ được nhắc đến trong bài?",
+    "options": [
+      { "key": "A", "text": "Xây dựng các tòa nhà hiện đại theo phong cách kiến trúc cổ Kyoto.", "correct": false },
+      { "key": "B", "text": "Sử dụng cảm biến hiện đại trong các công trình cổ để tiết kiệm năng lượng.", "correct": true },
+      { "key": "C", "text": "Thay thế các nghề thủ công truyền thống bằng dây chuyền sản xuất tự động.", "correct": false },
+      { "key": "D", "text": "Tổ chức các triển lãm công nghệ tại các di sản văn hóa thế giới.", "correct": false }
+    ],
+    "aiHint": "Hãy tìm đoạn văn có nhắc đến \"Kyoto\" và \"Cảm biến\" (センサー) để xác định câu trả lời chính xác nhất.",
+    "fullTranslation": "Gần đây tại Nhật Bản, nghề thủ công truyền thống và công nghệ tiên tiến đang được kết hợp hài hòa với nhau. Ví dụ, việc lắp đặt các cảm biến hiện đại trong các công trình cổ ở Kyoto nhằm tiết kiệm năng lượng đang thu hút nhiều sự chú ý. Những nỗ lực như vậy đóng vai trò quan trọng không chỉ trong việc bảo vệ môi trường mà còn giúp kế thừa di sản văn hóa cho các thế hệ tương lai."
+  }
+]

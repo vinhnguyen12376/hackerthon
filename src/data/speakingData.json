@@ -1,0 +1,31 @@
+{
+  "activeTopic": "Định hướng nghề nghiệp tại Nhật Bản",
+  "tags": ["#TiếngNhậtCôngSở", "#KínhNgữ"],
+  "initialChat": [
+    {
+      "sender": "teacher",
+      "senderName": "AI Sensei",
+      "jp": "今日の調子はどうですか？最近の勉強について聞かせてください。",
+      "vi": "Hôm nay bạn thế nào? Hãy chia sẻ về việc học gần đây của bạn nhé."
+    },
+    {
+      "sender": "user",
+      "senderName": "Bạn",
+      "jp": "今日は少し疲れましたが、JLPTの準備は順調です。",
+      "vi": "Hôm nay tôi hơi mệt một chút, nhưng việc ôn thi JLPT vẫn đang tiến triển tốt."
+    }
+  ],
+  "simulatedUserResponse": {
+    "sender": "user",
+    "senderName": "Bạn",
+    "jp": "はい、最近は文法 và 漢字を中心に勉強しています。特にN2の文法は難しいですが、毎日練習しています。",
+    "jpActual": "はい、最近は文法と漢字を中心に勉強しています。特にN2の文法は難しいですが、毎日練習しています。",
+    "vi": "Vâng, gần đây tôi chủ yếu học ngữ pháp và chữ Hán. Ngữ pháp N2 đặc biệt khó, nhưng tôi đang luyện tập mỗi ngày."
+  },
+  "simulatedTeacherResponse": {
+    "sender": "teacher",
+    "senderName": "AI Sensei",
+    "jp": "素晴らしいですね！文法と漢字は読解の基礎になります。何か分からないところがあればいつでも聞いてください。",
+    "vi": "Tuyệt vời quá! Ngữ pháp và chữ Hán là nền tảng của đọc hiểu. Nếu có chỗ nào chưa hiểu, cứ hỏi tôi bất kỳ lúc nào nhé."
+  }
+}

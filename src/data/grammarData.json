@@ -1,0 +1,43 @@
+{
+  "activeTopic": "Luyện tập Ngữ pháp N2",
+  "progress": 65,
+  "levelBadge": "JLPT N2",
+  "sentenceOrder": {
+    "translation": "Nếu có thể đi du lịch vòng quanh thế giới, tôi muốn đi ngay bây giờ.",
+    "words": [
+      { "id": "w1", "text": "世界一周旅行に" },
+      { "id": "w2", "text": "行ける" },
+      { "id": "w3", "text": "ものなら" },
+      { "id": "w4", "text": "今すぐ" },
+      { "id": "w5", "text": "行きたい" }
+    ],
+    "correctOrder": ["w1", "w2", "w3", "w4", "w5"],
+    "hint": "Cấu trúc ~ものなら đi sau động từ thể khả năng để giả định tình huống khó xảy ra."
+  },
+  "grammarNote": {
+    "title": "~ものなら",
+    "structure": "V-れる + ものなら",
+    "meaning": "\"Nếu có thể... (thì muốn làm gì đó)\". Dùng khi giả định một việc khó có thể xảy ra nhưng bản thân rất mong muốn.",
+    "otherExampleJp": "やり直せるものなら、もう一度人生をやり直したい。",
+    "otherExampleVi": "Nếu có thể làm lại, tôi muốn làm lại cuộc đời mình một lần nữa."
+  },
+  "aiErrorPrevention": [
+    {
+      "id": "err-1",
+      "title": "NHẦM LẪN THỂ BỊ ĐỘNG",
+      "desc": "Nhiều người dùng nhầm thể bị động thay vì thể khả năng trước \"ものなら\".",
+      "wrong": "行かれるものなら",
+      "right": "行けるものなら"
+    },
+    {
+      "id": "err-2",
+      "title": "NHẦM VỚI ~ものだから",
+      "desc": "\"ものなら\" là giả định việc khó xảy ra, còn \"ものだから\" dùng để giải thích lý do/biện hộ cho một kết quả thực tế."
+    },
+    {
+      "id": "err-3",
+      "title": "AI INSIGHT GỢI Ý",
+      "desc": "Bạn thường gặp khó khăn với các trợ từ chỉ hướng (に/へ). Hãy chú ý \"世界一周旅行に\" thường đi cùng động từ chuyển động \"行く\"."
+    }
+  ]
+}

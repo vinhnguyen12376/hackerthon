@@ -1,0 +1,24 @@
+[
+  {
+    "badge": "HỌC THEO NGỮ CẢNH",
+    "title": "Chọn từ phù hợp nhất vào chỗ trống",
+    "sentenceJp": "明日の会議には、__________ してください。",
+    "sentenceVi": "\"Vui lòng _____ tham dự cuộc họp vào ngày mai.\"",
+    "options": [
+      { "key": "A", "text": "出席", "roman": "shusseki", "translation": "Tham dự", "correct": true },
+      { "key": "B", "text": "欠席", "roman": "kesseki", "translation": "Vắng mặt", "correct": false },
+      { "key": "C", "text": "遅刻", "roman": "chikoku", "translation": "Đến muộn", "correct": false },
+      { "key": "D", "text": "参加", "roman": "sanka", "translation": "Tham gia (chung)", "correct": false }
+    ],
+    "mnemonic": "Xuất tịch (出席 - しゅっせき): \"Xuất\" (ra ngoài) + \"Tịch\" (chỗ ngồi). Mang nghĩa \"có mặt\" tại vị trí hay sự kiện cụ thể.",
+    "registerValue": 90,
+    "registerLabel": "Formal (Trang trọng)",
+    "registerDesc": "Sử dụng 出席 trong văn phòng hoặc email công việc. Tránh dùng 参加 (tham gia) nếu đó là một cuộc họp bắt buộc hoặc mang tính hành chính.",
+    "collocations": [
+      { "jp": "出席をとる", "vi": "Điểm danh" },
+      { "jp": "会議に出席する", "vi": "Dự cuộc họp" }
+    ],
+    "synonym": "参加 (Tham gia)",
+    "antonym": "欠席 (Vắng mặt)"
+  }
+]
