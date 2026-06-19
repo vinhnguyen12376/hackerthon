@@ -18,6 +18,7 @@
     { "name": "Listening (Nghe hiểu)", "mastery": "89%", "desc": "Âm thanh mẫu và ngữ điệu trong đàm thoại." },
     { "name": "Reading (Đọc hiểu)", "mastery": "55%", "desc": "Tốc độ đọc lướt và bắt ý nghĩa theo ngữ cảnh." },
     { "name": "Speaking (Luyện nói)", "mastery": "12%", "desc": "Sử dụng kính ngữ và phản xạ nói tự nhiên." },
-    { "name": "Writing (Luyện viết)", "mastery": "31%", "desc": "Bút pháp, viết luận và sửa lỗi chính tả." }
+    { "name": "Writing (Luyện viết)", "mastery": "31%", "desc": "Bút pháp, viết luận và sửa lỗi chính tả." },
+    { "name": "Counters (Lượng từ)", "mastery": "10%", "desc": "Cách đếm số lượng cho các loại đồ vật, con người, thời gian." }
   ]
 }

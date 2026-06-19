@@ -128,3 +128,10 @@ body {
 .transition-all {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.writing-error-highlight {
+  border-bottom: 2px dashed var(--error);
+  background-color: rgba(239, 68, 68, 0.1);
+  cursor: pointer;
+}
+

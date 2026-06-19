@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Home as HomeIcon, 
-  BookOpen, 
-  Book, 
-  User, 
-  Search, 
-  Bell, 
-  Settings, 
-  Mic, 
-  Volume2, 
-  CheckCircle, 
-  AlertCircle, 
-  Lightbulb, 
-  ChevronRight, 
-  RotateCcw, 
-  RotateCw, 
-  Trash2, 
-  Sparkles, 
-  FileText, 
-  Plus, 
-  X, 
+import {
+  Home as HomeIcon,
+  BookOpen,
+  Book,
+  User,
+  Search,
+  Bell,
+  Settings,
+  Mic,
+  Volume2,
+  CheckCircle,
+  AlertCircle,
+  Lightbulb,
+  ChevronRight,
+  RotateCcw,
+  RotateCw,
+  Trash2,
+  Sparkles,
+  FileText,
+  Plus,
+  X,
   ArrowLeft,
   ChevronLeft,
   Flame,
@@ -46,6 +46,8 @@ import {
   EyeOff
 } from 'lucide-react';
 import './App.css';
+import QuizApp from './components/QuizApp';
+
 import { supabase } from './supabaseClient';
 
 // Import JSON mock databases
@@ -58,13 +60,70 @@ import theoryData from './data/theoryData.json';
 import writingData from './data/writingData.json';
 import speakingData from './data/speakingData.json';
 import grammarQuizData from './data/grammarData.json';
+import TheoryViewer from './components/TheoryViewer';
+import DiagnosticTest from './components/DiagnosticTest';
+import WritingPractice from './components/WritingPractice';
+import VoiceChatPractice from './components/VoiceChatPractice';
 
 export default function App() {
   // Navigation State
   const [activeTab, setActiveTab] = useState('trang-chu'); // 'trang-chu', 'lo-trinh', 'ly-thuyet', 'speaking', 'writing', 'kanji', 'vocab', 'reading', 'listening', 'profile'
+  const [theoryCategory, setTheoryCategory] = useState('');
+  const [theoryCounts, setTheoryCounts] = useState({ kanji: 0, vocab: 0, grammar: 0, counter: 0 });
+  const [roadmap, setRoadmap] = useState(() => {
+    const saved = localStorage.getItem('guest_roadmap');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (roadmap) {
+      localStorage.setItem('guest_roadmap', JSON.stringify(roadmap));
+    } else {
+      localStorage.removeItem('guest_roadmap');
+    }
+  }, [roadmap]);
+
+  useEffect(() => {
+    const fetchTheoryCounts = async () => {
+      try {
+        const [kanjiRes, vocabRes, grammarRes, counterRes] = await Promise.all([
+          supabase.from('kanjis').select('*', { count: 'exact', head: true }),
+          supabase.from('vocabularies').select('*', { count: 'exact', head: true }),
+          supabase.from('grammar_points').select('*', { count: 'exact', head: true }),
+          supabase.from('counter_categories').select('*', { count: 'exact', head: true })
+        ]);
+
+        setTheoryCounts({
+          kanji: kanjiRes.count || 0,
+          vocab: vocabRes.count || 0,
+          grammar: grammarRes.count || 0,
+          counter: counterRes.count || 0
+        });
+      } catch (err) {
+        console.error("Lỗi đếm số lượng lý thuyết:", err);
+      }
+    };
+    fetchTheoryCounts();
+  }, []);
+
+  const handleOpenTheory = (skillName) => {
+    let cat = '';
+    if (skillName.includes('Kanji')) cat = 'kanji';
+    else if (skillName.includes('Vocabulary')) cat = 'vocab';
+    else if (skillName.includes('Grammar')) cat = 'grammar';
+    else if (skillName.includes('Counters')) cat = 'counter';
+
+    if (cat) {
+      setTheoryCategory(cat);
+      setActiveTab('theory_viewer');
+    } else {
+      alert(`Đang cập nhật tính năng cho ${skillName}`);
+    }
+  };
+
   const [isAdminMode, setIsAdminMode] = useState(false);
-  const [adminTab, setAdminTab] = useState('quan-ly-noi-dung'); 
-  const [adminSubSkill, setAdminSubSkill] = useState('Ngữ pháp'); 
+  const [adminTab, setAdminTab] = useState('quan-ly-noi-dung');
+  const [adminSubSkill, setAdminSubSkill] = useState('Ngữ pháp');
 
   // Auth & Form State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -72,7 +131,7 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
-  
+
   // Login Inputs
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -123,8 +182,33 @@ export default function App() {
           role: session.user.email.endsWith('@komorebi.ai') ? 'Quản trị viên' : 'Học viên',
           dob: metadata.dob || 'Chưa cập nhật',
           phone: metadata.phone || 'Chưa cập nhật',
-          address: metadata.address || 'Chưa cập nhật'
+          address: metadata.address || 'Chưa cập nhật',
+          id: session.user.id
         }));
+
+        // Fetch latest roadmap
+        supabase.from('user_exam_attempts')
+          .select('roadmap_json')
+          .eq('user_id', session.user.id)
+          .not('roadmap_json', 'is', null)
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0 && data[0].roadmap_json) {
+              let parsedRoadmap = data[0].roadmap_json;
+              if (typeof parsedRoadmap === 'string') {
+                try { parsedRoadmap = JSON.parse(parsedRoadmap); } catch(e) {}
+              }
+              setRoadmap(parsedRoadmap);
+            } else {
+              // Kéo DB không có -> Tài khoản mới tinh -> Phải xóa sạch roadmap cũ trong RAM và LocalStorage
+              setRoadmap(null);
+            }
+          });
+      } else {
+        // Nếu user logout (session rỗng)
+        setRoadmap(null);
+        setIsAuthenticated(false);
       }
     });
 
@@ -139,10 +223,30 @@ export default function App() {
           role: session.user.email.endsWith('@komorebi.ai') ? 'Quản trị viên' : 'Học viên',
           dob: metadata.dob || 'Chưa cập nhật',
           phone: metadata.phone || 'Chưa cập nhật',
-          address: metadata.address || 'Chưa cập nhật'
+          address: metadata.address || 'Chưa cập nhật',
+          id: session.user.id
         }));
+
+        supabase.from('user_exam_attempts')
+          .select('roadmap_json')
+          .eq('user_id', session.user.id)
+          .not('roadmap_json', 'is', null)
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0 && data[0].roadmap_json) {
+              let parsedRoadmap = data[0].roadmap_json;
+              if (typeof parsedRoadmap === 'string') {
+                try { parsedRoadmap = JSON.parse(parsedRoadmap); } catch(e) {}
+              }
+              setRoadmap(parsedRoadmap);
+            } else {
+              setRoadmap(null);
+            }
+          });
       } else {
         setIsAuthenticated(false);
+        setRoadmap(null);
       }
     });
 
@@ -165,7 +269,7 @@ export default function App() {
 
     setIsAuthLoading(true);
     setLoginError('');
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
@@ -312,7 +416,7 @@ export default function App() {
 
   // Audio simulation timeline
   const [audioPlaying, setAudioPlaying] = useState(false);
-  const [audioTime, setAudioTime] = useState(42); 
+  const [audioTime, setAudioTime] = useState(42);
   const [audioRate, setAudioRate] = useState(1.0);
   const [showAllSubtitles, setShowAllSubtitles] = useState(false);
 
@@ -322,14 +426,14 @@ export default function App() {
   const [testDuration, setTestDuration] = useState('30 Minutes');
   const [showTestModal, setShowTestModal] = useState(false);
   const [testActive, setTestActive] = useState(false);
-  const [testTimer, setTestTimer] = useState(1800); 
+  const [testTimer, setTestTimer] = useState(1800);
   const [testAnswers, setTestAnswers] = useState({});
 
   // Speaking Studio State (Loaded from JSON)
   const [chatHistory, setChatHistory] = useState(speakingData.initialChat);
   const [isRecording, setIsRecording] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
-  const [speakingProgress, setSpeakingProgress] = useState(0); 
+  const [speakingProgress, setSpeakingProgress] = useState(0);
   const [pronunciationScore, setPronunciationScore] = useState('92% Khớp • Gần bản xứ');
   const [grammarTip, setGrammarTip] = useState('Thử dùng "~ております" để thể hiện kính ngữ (Keigo)');
 
@@ -397,14 +501,14 @@ export default function App() {
     if (isRecording) {
       setIsRecording(false);
       setIsAiSpeaking(true);
-      
+
       setTimeout(() => {
         const newUserMessage = speakingData.simulatedUserResponse;
         setChatHistory(prev => [...prev, newUserMessage]);
         setSpeakingProgress(2);
         setPronunciationScore('95% Khớp • Rất trôi chảy');
         setGrammarTip('Sử dụng tốt mẫu trợ từ "を中心に" để chỉ tiêu điểm học tập.');
-        
+
         setTimeout(() => {
           const newAiMessage = speakingData.simulatedTeacherResponse;
           setChatHistory(prev => [...prev, newAiMessage]);
@@ -443,7 +547,7 @@ export default function App() {
     const regex = new RegExp(issue.original, 'g');
     const newText = writingText.replace(regex, issue.corrected);
     setWritingText(newText);
-    
+
     setWritingIssues(prev => prev.map(item => {
       if (item.id === issue.id) return { ...item, solved: true };
       return item;
@@ -505,7 +609,7 @@ export default function App() {
     ];
 
     let parts = [text];
-    
+
     targets.forEach(t => {
       const issue = writingIssues.find(i => i.id === t.id);
       if (issue && !issue.solved) {
@@ -534,7 +638,7 @@ export default function App() {
   const handleSimulateUpload = () => {
     setIsUploading(true);
     setUploadProgress(10);
-    
+
     const interval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
@@ -632,26 +736,26 @@ export default function App() {
             const opacity = Math.random() * 0.7 + 0.3;
             const scale = Math.random() * 0.8 + 0.2;
             const filter = `blur(${Math.random() * 1.5}px)`;
-            
+
             return (
-              <div 
-                key={idx} 
-                className="snowflake" 
-                style={{ 
-                  left, 
-                  animationDelay: delay, 
-                  animationDuration: duration, 
-                  opacity, 
-                  transform: `scale(${scale})`, 
-                  filter 
+              <div
+                key={idx}
+                className="snowflake"
+                style={{
+                  left,
+                  animationDelay: delay,
+                  animationDuration: duration,
+                  opacity,
+                  transform: `scale(${scale})`,
+                  filter
                 }}
               />
             );
           })}
         </div>
-        
+
         {/* Dark Mode toggle in top right */}
-        <button 
+        <button
           className="auth-dark-mode-toggle"
           onClick={() => setDarkMode(!darkMode)}
           title={darkMode ? "Giao diện sáng" : "Giao diện tối"}
@@ -663,32 +767,32 @@ export default function App() {
           <div className="auth-card-wrapper fade-in-up">
             <div className="auth-login-card">
               <div className="auth-logo-header">
-                <span className="auth-logo-text">Komorebi AI</span>
-                <span className="auth-logo-badge">TRÌNH ĐỘ N3</span>
+                <span className="auth-logo-text">NihongoMentorAI</span>
+                <span className="auth-logo-badge">TRÌNH ĐỘ N5</span>
               </div>
               <h2 className="auth-heading">Chào mừng trở lại!</h2>
-              <p className="auth-subheading">Chinh phục tiếng Nhật JLPT cùng Komorebi AI</p>
+              <p className="auth-subheading">Chinh phục tiếng Nhật JLPT cùng NihongoMentorAI</p>
 
               {loginError && <div className="auth-error-msg"><AlertCircle size={16} /> {loginError}</div>}
 
               <form onSubmit={handleLogin} className="auth-form">
                 <div className="auth-input-group">
                   <label>Địa chỉ Email</label>
-                  <input 
-                    type="email" 
-                    placeholder="ten@viethan.edu.vn" 
+                  <input
+                    type="email"
+                    placeholder="ten@viethan.edu.vn"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
                     disabled={isAuthLoading}
                   />
                 </div>
-                
+
                 <div className="auth-input-group password-group">
                   <div className="auth-label-row">
                     <label>Mật khẩu</label>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="auth-forgot-link-btn"
                       disabled={isAuthLoading}
                       onClick={() => { setAuthView('forgot-password'); setLoginError(''); }}
@@ -697,16 +801,16 @@ export default function App() {
                     </button>
                   </div>
                   <div className="password-input-wrapper">
-                    <input 
-                      type={showPassword ? "text" : "password"} 
-                      placeholder="••••••••" 
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       required
                       disabled={isAuthLoading}
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="password-toggle-btn"
                       disabled={isAuthLoading}
                       onClick={() => setShowPassword(!showPassword)}
@@ -725,8 +829,8 @@ export default function App() {
                 <span>hoặc đăng nhập bằng</span>
               </div>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="auth-google-btn"
                 disabled={isAuthLoading}
                 onClick={() => {
@@ -737,10 +841,10 @@ export default function App() {
                 }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
                 <span>Google</span>
               </button>
@@ -758,11 +862,11 @@ export default function App() {
               {/* Left Column: Form */}
               <div className="register-form-col">
                 <div className="auth-logo-header">
-                  <span className="auth-logo-text">Komorebi AI</span>
+                  <span className="auth-logo-text">NihongoMentorAI</span>
                   <span className="auth-logo-badge">ĐĂNG KÝ HỌC VIÊN</span>
                 </div>
                 <h2 className="auth-heading">Tạo tài khoản mới</h2>
-                <p className="auth-subheading" style={{ marginBottom: '16px' }}>Bắt đầu hành trình học tập thông minh cùng Komorebi AI</p>
+                <p className="auth-subheading" style={{ marginBottom: '16px' }}>Bắt đầu hành trình học tập thông minh cùng NihongoMentorAI</p>
 
                 {regError && <div className="auth-error-msg" style={{ marginBottom: '16px' }}><AlertCircle size={16} /> {regError}</div>}
                 {regSuccess && (
@@ -774,9 +878,9 @@ export default function App() {
                 <form onSubmit={handleRegister} className="auth-form register-grid-form">
                   <div className="auth-input-group col-span-2">
                     <label>Họ và tên</label>
-                    <input 
-                      type="text" 
-                      placeholder="Nguyễn Văn A" 
+                    <input
+                      type="text"
+                      placeholder="Nguyễn Văn A"
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
                       required
@@ -786,9 +890,9 @@ export default function App() {
 
                   <div className="auth-input-group col-span-2">
                     <label>Địa chỉ Email</label>
-                    <input 
-                      type="email" 
-                      placeholder="nva@viethan.edu.vn" 
+                    <input
+                      type="email"
+                      placeholder="nva@viethan.edu.vn"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       required
@@ -798,8 +902,8 @@ export default function App() {
 
                   <div className="auth-input-group">
                     <label>Ngày tháng năm sinh</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={regDob}
                       onChange={(e) => setRegDob(e.target.value)}
                       required
@@ -809,9 +913,9 @@ export default function App() {
 
                   <div className="auth-input-group">
                     <label>Số điện thoại</label>
-                    <input 
-                      type="tel" 
-                      placeholder="0987654321" 
+                    <input
+                      type="tel"
+                      placeholder="0987654321"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       required
@@ -821,9 +925,9 @@ export default function App() {
 
                   <div className="auth-input-group col-span-2">
                     <label>Địa chỉ nhà</label>
-                    <input 
-                      type="text" 
-                      placeholder="470 Trần Đại Nghĩa, Đà Nẵng" 
+                    <input
+                      type="text"
+                      placeholder="470 Trần Đại Nghĩa, Đà Nẵng"
                       value={regAddress}
                       onChange={(e) => setRegAddress(e.target.value)}
                       required
@@ -834,16 +938,16 @@ export default function App() {
                   <div className="auth-input-group password-group">
                     <label>Mật khẩu</label>
                     <div className="password-input-wrapper">
-                      <input 
-                        type={showPassword ? "text" : "password"} 
-                        placeholder="••••••••" 
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
                         required
                         disabled={isAuthLoading}
                       />
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="password-toggle-btn"
                         disabled={isAuthLoading}
                         onClick={() => setShowPassword(!showPassword)}
@@ -856,16 +960,16 @@ export default function App() {
                   <div className="auth-input-group password-group">
                     <label>Xác nhận mật khẩu</label>
                     <div className="password-input-wrapper">
-                      <input 
-                        type={showConfirmPassword ? "text" : "password"} 
-                        placeholder="••••••••" 
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
                         value={regConfirmPassword}
                         onChange={(e) => setRegConfirmPassword(e.target.value)}
                         required
                         disabled={isAuthLoading}
                       />
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="password-toggle-btn"
                         disabled={isAuthLoading}
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -884,8 +988,8 @@ export default function App() {
                   <span>hoặc đăng ký bằng</span>
                 </div>
 
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="auth-google-btn"
                   disabled={isAuthLoading}
                   onClick={() => {
@@ -905,10 +1009,10 @@ export default function App() {
                   }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
                   <span>Google</span>
                 </button>
@@ -945,7 +1049,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="register-info-preview">
-                  <div className="preview-label">KOMOREBI AI DASHBOARD</div>
+                  <div className="preview-label">NihongoMentorAI DASHBOARD</div>
                   <div className="preview-bar-row">
                     <div className="preview-bar" style={{ width: '80%' }}></div>
                     <span className="preview-val">80%</span>
@@ -964,7 +1068,7 @@ export default function App() {
           <div className="auth-card-wrapper fade-in-up">
             <div className="auth-login-card">
               <div className="auth-logo-header">
-                <span className="auth-logo-text">Komorebi AI</span>
+                <span className="auth-logo-text">NihongoMentorAI</span>
                 <span className="auth-logo-badge">KHÔI PHỤC MẬT KHẨU</span>
               </div>
               <h2 className="auth-heading">Quên mật khẩu?</h2>
@@ -978,16 +1082,16 @@ export default function App() {
                   <p className="success-message-text">
                     Đã gửi email khôi phục! Vui lòng kiểm tra hộp thư của bạn.
                   </p>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="auth-primary-btn"
                     disabled={isAuthLoading}
                     onClick={() => setForgotSuccess(false)}
                   >
                     Gửi lại email
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="auth-secondary-btn"
                     disabled={isAuthLoading}
                     onClick={() => { setAuthView('login'); setForgotSuccess(false); setForgotEmail(''); }}
@@ -999,9 +1103,9 @@ export default function App() {
                 <form onSubmit={handleForgotPassword} className="auth-form">
                   <div className="auth-input-group">
                     <label>Địa chỉ Email</label>
-                    <input 
-                      type="email" 
-                      placeholder="ten@viethan.edu.vn" 
+                    <input
+                      type="email"
+                      placeholder="ten@viethan.edu.vn"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
                       required
@@ -1012,8 +1116,8 @@ export default function App() {
                   <button type="submit" className="auth-primary-btn" disabled={isAuthLoading}>
                     {isAuthLoading ? 'Đang gửi...' : 'Gửi yêu cầu khôi phục'}
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="auth-secondary-btn"
                     disabled={isAuthLoading}
                     onClick={() => { setAuthView('login'); setForgotEmail(''); }}
@@ -1031,19 +1135,19 @@ export default function App() {
 
   return (
     <div className={`app-container ${darkMode ? 'dark-theme-active' : ''}`} style={{ backgroundColor: darkMode ? '#0f172a' : '' }}>
-      
+
       {/* Sidebar Navigation */}
       <aside className="sidebar" style={{ backgroundColor: darkMode ? '#1e293b' : '', borderColor: darkMode ? '#334155' : '' }}>
-        
+
         <div className="logo-container">
-          <h1 className="logo-text" style={{ color: darkMode ? '#a5b4fc' : '' }}>Komorebi AI</h1>
+          <h1 className="logo-text" style={{ color: darkMode ? '#a5b4fc' : '' }}>NihongoMentorAI</h1>
           <p className="logo-sub">{isAdminMode ? 'QUẢN TRỊ VIÊN HỆ THỐNG' : 'TRỢ LÝ AI CỦA BẠN'}</p>
         </div>
 
         {/* Dynamic Sidebar Links: Home -> Roadmap -> Theory -> Exercises -> Profile */}
         {!isAdminMode ? (
           <nav className="nav-links">
-            <button 
+            <button
               className={`nav-item ${activeTab === 'trang-chu' ? 'active' : ''}`}
               onClick={() => { setActiveTab('trang-chu'); setTestActive(false); }}
               style={{ color: darkMode ? '#cbd5e1' : '' }}
@@ -1051,8 +1155,8 @@ export default function App() {
               <HomeIcon size={18} />
               <span>Trang chủ</span>
             </button>
-            
-            <button 
+
+            <button
               className={`nav-item ${activeTab === 'lo-trinh' ? 'active' : ''}`}
               onClick={() => setActiveTab('lo-trinh')}
               style={{ color: darkMode ? '#cbd5e1' : '' }}
@@ -1061,8 +1165,8 @@ export default function App() {
               <span>Lộ trình</span>
             </button>
 
-            <button 
-              className={`nav-item ${activeTab === 'ly-thuyet' ? 'active' : ''}`}
+            <button
+              className={`nav-item ${['ly-thuyet', 'theory_viewer'].includes(activeTab) ? 'active' : ''}`}
               onClick={() => setActiveTab('ly-thuyet')}
               style={{ color: darkMode ? '#cbd5e1' : '' }}
             >
@@ -1070,16 +1174,34 @@ export default function App() {
               <span>Lý thuyết</span>
             </button>
 
-            <button 
-              className={`nav-item ${['bai-tap', 'speaking', 'writing', 'kanji', 'vocab', 'reading', 'listening', 'grammar'].includes(activeTab) ? 'active' : ''}`}
+            <button
+              className={`nav-item ${['bai-tap', 'kanji', 'vocab', 'reading', 'listening', 'grammar'].includes(activeTab) ? 'active' : ''}`}
               onClick={() => { setActiveTab('bai-tap'); setTestActive(false); }}
               style={{ color: darkMode ? '#cbd5e1' : '' }}
             >
               <BookOpen size={18} />
               <span>Bài tập</span>
             </button>
-            
-            <button 
+
+            <button
+              className={`nav-item ${activeTab === 'speaking' ? 'active' : ''}`}
+              onClick={() => setActiveTab('speaking')}
+              style={{ color: darkMode ? '#cbd5e1' : '' }}
+            >
+              <Mic size={18} />
+              <span>Luyện Nói</span>
+            </button>
+
+            <button
+              className={`nav-item ${activeTab === 'writing' ? 'active' : ''}`}
+              onClick={() => setActiveTab('writing')}
+              style={{ color: darkMode ? '#cbd5e1' : '' }}
+            >
+              <FileText size={18} />
+              <span>Luyện Viết</span>
+            </button>
+
+            <button
               className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
               onClick={() => setActiveTab('profile')}
               style={{ color: darkMode ? '#cbd5e1' : '' }}
@@ -1090,7 +1212,7 @@ export default function App() {
           </nav>
         ) : (
           <nav className="nav-links">
-            <button 
+            <button
               className={`nav-item ${adminTab === 'tong-quan' ? 'active' : ''}`}
               onClick={() => setAdminTab('tong-quan')}
             >
@@ -1098,7 +1220,7 @@ export default function App() {
               <span>Tổng quan</span>
             </button>
 
-            <button 
+            <button
               className={`nav-item ${['quan-ly-noi-dung', 'upload-trich-xuat'].includes(adminTab) ? 'active' : ''}`}
               onClick={() => setAdminTab('quan-ly-noi-dung')}
             >
@@ -1106,7 +1228,7 @@ export default function App() {
               <span>Quản lý nội dung</span>
             </button>
 
-            <button 
+            <button
               className={`nav-item ${adminTab === 'user-analytics' ? 'active' : ''}`}
               onClick={() => alert('Thống kê Người dùng hệ thống đang cập nhật.')}
             >
@@ -1114,7 +1236,7 @@ export default function App() {
               <span>Phân tích người dùng</span>
             </button>
 
-            <button 
+            <button
               className={`nav-item ${adminTab === 'system-settings' ? 'active' : ''}`}
               onClick={() => alert('Hệ thống cài đặt phân quyền đang cập nhật.')}
             >
@@ -1150,9 +1272,9 @@ export default function App() {
                 <Plus size={16} />
                 <span>Tạo bài tập mới</span>
               </button>
-              
-              <button 
-                className="promo-btn" 
+
+              <button
+                className="promo-btn"
                 style={{ backgroundColor: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 onClick={() => setIsAdminMode(false)}
               >
@@ -1172,9 +1294,9 @@ export default function App() {
 
           <div className="user-profile" style={{ borderColor: darkMode ? '#334155' : '', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <img 
-                src={currentUser.avatar} 
-                alt="Avatar" 
+              <img
+                src={currentUser.avatar}
+                alt="Avatar"
                 className="user-avatar"
               />
               <div className="user-info">
@@ -1182,8 +1304,8 @@ export default function App() {
                 <span className="user-plan">{currentUser.role === 'Quản trị viên' ? 'QUẢN TRỊ VIÊN' : 'THÀNH VIÊN PRO'}</span>
               </div>
             </div>
-            <button 
-              className="action-btn" 
+            <button
+              className="action-btn"
               onClick={handleLogout}
               title="Đăng xuất"
               style={{ color: 'var(--text-light)', padding: '6px', borderRadius: '50%', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -1196,14 +1318,14 @@ export default function App() {
 
       {/* Main Panel */}
       <main className="main-content" style={{ color: darkMode ? '#cbd5e1' : '' }}>
-        
+
         {/* Top Header Navigation */}
         <header className="topbar" style={{ backgroundColor: darkMode ? '#1e293b' : '', borderColor: darkMode ? '#334155' : '' }}>
-          {!isAdminMode && ['speaking', 'writing', 'kanji', 'vocab', 'reading', 'listening', 'grammar'].includes(activeTab) ? (
+          {!isAdminMode && ['kanji', 'vocab', 'reading', 'listening', 'grammar'].includes(activeTab) ? (
             <div className="topbar-quiz-header" style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button 
-                  className="action-btn" 
+                <button
+                  className="action-btn"
                   onClick={() => { setActiveTab('bai-tap'); setAudioPlaying(false); }}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '18px' }}
                 >
@@ -1213,8 +1335,6 @@ export default function App() {
                     {activeTab === 'grammar' && 'Luyện tập Ngữ pháp'}
                     {activeTab === 'reading' && 'Luyện tập Đọc hiểu'}
                     {activeTab === 'listening' && 'Luyện tập Nghe hiểu'}
-                    {activeTab === 'writing' && 'Luyện tập Viết'}
-                    {activeTab === 'speaking' && 'Luyện tập Nói'}
                     {activeTab === 'kanji' && 'Luyện tập Chữ Hán'}
                   </span>
                 </button>
@@ -1227,10 +1347,10 @@ export default function App() {
               <div className="progress-bar-center" style={{ flexGrow: 1, maxWidth: '400px', margin: '0 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-light)', whiteSpace: 'nowrap' }}>TIẾN ĐỘ BÀI HỌC</span>
                 <div className="skill-progress-bar" style={{ height: '6px', flexGrow: 1, backgroundColor: 'var(--border)' }}>
-                  <div 
-                    className="skill-progress-fill" 
-                    style={{ 
-                      width: activeTab === 'vocab' ? '60%' : activeTab === 'grammar' ? '65%' : activeTab === 'reading' ? '25%' : activeTab === 'listening' ? '25%' : '30%' 
+                  <div
+                    className="skill-progress-fill"
+                    style={{
+                      width: activeTab === 'vocab' ? '60%' : activeTab === 'grammar' ? '65%' : activeTab === 'reading' ? '25%' : activeTab === 'listening' ? '25%' : '30%'
                     }}
                   ></div>
                 </div>
@@ -1278,16 +1398,16 @@ export default function App() {
                   )}
                 </span>
                 <span className="level-badge" style={{ backgroundColor: darkMode ? '#334155' : '', borderColor: darkMode ? '#475569' : '', color: darkMode ? '#cbd5e1' : '' }}>
-                  {isAdminMode ? 'HỆ THỐNG QUẢN TRỊ' : 'TRÌNH ĐỘ N3'}
+                  {isAdminMode ? 'HỆ THỐNG QUẢN TRỊ' : 'TRÌNH ĐỘ N5'}
                 </span>
               </div>
 
               <div className="topbar-right">
                 <div className="search-container">
                   <Search size={16} className="search-icon" />
-                  <input 
-                    type="text" 
-                    placeholder="Tìm kiếm tài liệu..." 
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm tài liệu..."
                     className="search-input"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -1326,7 +1446,7 @@ export default function App() {
               <div className="page-wrapper">
                 <div className="admin-tabs">
                   {['Kanji', 'Từ vựng', 'Ngữ pháp', 'Đọc hiểu', 'Nghe hiểu', 'Viết', 'Nói'].map(tab => (
-                    <button 
+                    <button
                       key={tab}
                       className={`admin-tab-btn ${adminSubSkill === tab ? 'active' : ''}`}
                       onClick={() => setAdminSubSkill(tab)}
@@ -1339,8 +1459,8 @@ export default function App() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div className="skill-pill active" style={{ borderRadius: 'var(--radius-sm)' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         style={{ marginRight: '6px', cursor: 'pointer' }}
                         checked={adminQuestions.every(q => q.checked)}
                         onChange={(e) => setAdminQuestions(adminQuestions.map(q => ({ ...q, checked: e.target.checked })))}
@@ -1354,8 +1474,8 @@ export default function App() {
                       <option>Bộ lọc: Bản nháp</option>
                     </select>
 
-                    <button 
-                      className="skill-btn" 
+                    <button
+                      className="skill-btn"
                       style={{ color: 'var(--error)', borderColor: 'var(--error-border)', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px' }}
                       onClick={handleMassDelete}
                     >
@@ -1368,7 +1488,7 @@ export default function App() {
                       <UploadCloud size={16} />
                       <span>Tải lên Tài liệu</span>
                     </button>
-                    
+
                     <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                       Đang hiển thị 1-{adminQuestions.length} của 248 câu hỏi
                     </span>
@@ -1396,8 +1516,8 @@ export default function App() {
                       {adminQuestions.map(q => (
                         <tr key={q.id}>
                           <td>
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={q.checked}
                               onChange={() => handleSelectQuestion(q.id)}
                               style={{ cursor: 'pointer' }}
@@ -1410,8 +1530,8 @@ export default function App() {
                           <td>
                             <div className="opt-bubble-row">
                               {['A', 'B', 'C', 'D'].map(o => (
-                                <span 
-                                  key={o} 
+                                <span
+                                  key={o}
                                   className={`opt-bubble ${q.ans === o ? 'correct' : ''}`}
                                 >
                                   {o}
@@ -1426,7 +1546,7 @@ export default function App() {
                             <span className="q-badge-lvl">{q.level}</span>
                           </td>
                           <td>
-                            <div 
+                            <div
                               className={`q-badge-status ${q.status === 'Công khai' ? 'public' : 'draft'}`}
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
@@ -1598,7 +1718,7 @@ export default function App() {
             {/* Trang chủ */}
             {activeTab === 'trang-chu' && !testActive && (
               <div className="page-wrapper">
-                
+
                 <div className="page-intro">
                   <h2 className="page-heading">Chào buổi sáng, {currentUser.name.split(' ')[0]}!</h2>
                   <p className="page-subheading">Hôm nay là một ngày tuyệt vời để chinh phục Kanji.</p>
@@ -1606,21 +1726,21 @@ export default function App() {
 
                 {/* Daily Schedule Section */}
                 <div className="dashboard-grid">
-                  
+
                   <div className="focus-card">
                     <div className="focus-header">
                       <span className="focus-badge">Mục tiêu chính</span>
                       <span className="focus-level">Cấp độ: N2</span>
                     </div>
-                    
+
                     <h3 className="focus-title">
                       読解 <span>(Đọc hiểu)</span>
                     </h3>
 
                     <div className="checklist-group">
                       {checklist.map(item => (
-                        <div 
-                          key={item.id} 
+                        <div
+                          key={item.id}
                           className={`checklist-item ${item.checked ? 'checked' : ''}`}
                           onClick={() => setChecklist(checklist.map(i => i.id === item.id ? { ...i, checked: !i.checked } : i))}
                         >
@@ -1641,8 +1761,8 @@ export default function App() {
                           Tiến độ bài học: {Math.round((checklist.filter(c => c.checked).length / checklist.length) * 100)}%
                         </span>
                         <div className="skill-progress-bar" style={{ height: '6px' }}>
-                          <div 
-                            className="skill-progress-fill" 
+                          <div
+                            className="skill-progress-fill"
                             style={{ width: `${(checklist.filter(c => c.checked).length / checklist.length) * 100}%` }}
                           ></div>
                         </div>
@@ -1694,7 +1814,7 @@ export default function App() {
                 <div>
                   <h3 className="section-title">Lý thuyết & Kỹ năng</h3>
                   <div className="skills-grid">
-                    
+
                     {/* Kanji */}
                     <div className="skill-card">
                       <div className="skill-header">
@@ -1837,13 +1957,19 @@ export default function App() {
             )}
 
             {/* Bài tập tổng hợp */}
-            {activeTab === 'bai-tap' && (
+
+            {(activeTab === 'bai-tap' || activeTab === 'quiz' || activeTab === 'mock_exam') && <QuizApp activeTab={activeTab} setActiveTab={setActiveTab} />}
+            {activeTab === 'diagnostic_test' && <DiagnosticTest setActiveTab={setActiveTab} setRoadmap={setRoadmap} currentUser={currentUser} />}
+            {activeTab === 'writing' && <WritingPractice setActiveTab={setActiveTab} />}
+            {activeTab === 'theory_viewer' && <TheoryViewer theoryCategory={theoryCategory} setActiveTab={setActiveTab} />}
+            {activeTab === 'bai-tap-old' && (
+
               <div className="page-wrapper">
                 <div className="page-intro">
                   <h2 className="page-heading">Thư viện bài tập tương tác</h2>
                   <p className="page-subheading">Lựa chọn một kỹ năng bên dưới để bắt đầu luyện tập với trợ lý AI của bạn.</p>
                 </div>
-                
+
                 <div className="skills-grid">
                   {/* Grammar */}
                   <div className="skill-card">
@@ -1991,42 +2117,53 @@ export default function App() {
                   <h2 className="page-heading">Lộ Trình Học Tập Cá Nhân</h2>
                   <p className="page-subheading">Hệ thống AI đề xuất nội dung ôn thi và giám sát mục tiêu hoàn thành.</p>
                 </div>
-                
-                <div className="mock-test-section" style={{ borderLeft: '4px solid var(--primary)', cursor: 'pointer' }} onClick={() => setActiveTab('reading')}>
-                  <div style={{ flex: 1 }}>
-                    <span className="focus-badge" style={{ marginBottom: '12px' }}>ĐANG TRỌNG TÂM</span>
-                    <h4 className="visual-japanese" style={{ fontSize: '22px', color: 'var(--text-primary)' }}>読解 (Đọc hiểu N2)</h4>
-                    <p className="mock-test-desc" style={{ marginTop: '8px' }}>Luyện tập đọc văn bản và trích xuất câu hỏi nội dung.</p>
+                {!roadmap ? (
+                  <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: 'var(--bg-main)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
+                    <Compass size={64} color="var(--border)" style={{ margin: '0 auto 16px' }} />
+                    <h3 style={{ marginBottom: '16px', color: 'var(--text-main)' }}>Bạn chưa có lộ trình học</h3>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Hãy làm bài kiểm tra đầu vào để AI Agent có thể đánh giá và thiết kế lộ trình riêng cho bạn.</p>
+                    <button className="banner-btn-primary" onClick={() => setActiveTab('diagnostic_test')}>
+                      Làm bài kiểm tra (30 câu)
+                    </button>
                   </div>
-                  <ChevronRight size={24} className="text-primary" />
-                </div>
-
-                <div className="skills-grid" style={{ marginTop: '20px' }}>
-                  <div className="skill-card" onClick={() => setActiveTab('listening')}>
-                    <div className="skill-header">
-                      <span className="focus-badge">TIẾP THEO</span>
+                ) : (
+                  <div>
+                    <div className="promo-box" style={{ marginBottom: '24px', backgroundColor: 'var(--primary-bg)', borderColor: 'var(--primary)' }}>
+                      <h3 style={{ color: 'var(--primary)', marginBottom: '8px' }}>🎯 Đánh giá từ AI Agent</h3>
+                      <p style={{ color: 'var(--text-secondary)' }}>{roadmap.overall_assessment || 'Đang phân tích...'}</p>
                     </div>
-                    <h4 className="vocab-jp" style={{ fontSize: '18px' }}>聴解 (Nghe hiểu N2)</h4>
-                    <p className="skill-desc">Luyện kỹ năng đàm thoại ga tàu điện ngầm và quán cà phê.</p>
-                    <button className="skill-btn" style={{ marginTop: 'auto' }}>Mở bài học</button>
-                  </div>
-
-                  <div className="skill-card" onClick={() => setActiveTab('speaking')}>
-                    <div className="skill-header">
-                      <span className="focus-badge" style={{ backgroundColor: 'var(--text-light)' }}>ĐÃ XONG</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+                      <div style={{ padding: '20px', backgroundColor: 'var(--success-bg)', borderRadius: '12px', border: '1px solid var(--success-border)' }}>
+                        <h4 style={{ color: 'var(--success)', marginBottom: '12px' }}>Điểm mạnh</h4>
+                        <ul style={{ paddingLeft: '20px', margin: 0, color: 'var(--text-secondary)' }}>
+                          {(roadmap.strengths || []).map((s, idx) => <li key={idx}>{s}</li>)}
+                        </ul>
+                      </div>
+                      <div style={{ padding: '20px', backgroundColor: 'var(--danger-bg)', borderRadius: '12px', border: '1px solid var(--danger-border)' }}>
+                        <h4 style={{ color: 'var(--danger)', marginBottom: '12px' }}>Điểm cần cải thiện</h4>
+                        <ul style={{ paddingLeft: '20px', margin: 0, color: 'var(--text-secondary)' }}>
+                          {(roadmap.weaknesses || []).map((w, idx) => <li key={idx}>{w}</li>)}
+                        </ul>
+                      </div>
                     </div>
-                    <h4 className="vocab-jp" style={{ fontSize: '18px' }}>会話 (Hội thoại N2)</h4>
-                    <p className="skill-desc">Chủ đề nghề nghiệp và sử dụng kính ngữ.</p>
-                    <button className="skill-btn" style={{ marginTop: 'auto' }}>Xem lại</button>
+                    <h3 style={{ marginBottom: '16px', fontSize: '20px' }}>Lộ trình đề xuất</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {(roadmap.plan || []).map((p, idx) => (
+                        <div key={idx} style={{ padding: '20px', backgroundColor: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                          <span className="focus-badge" style={{ marginBottom: '8px' }}>Tuần {p.week}</span>
+                          <p style={{ margin: 0, color: 'var(--text-main)', fontSize: '16px', lineHeight: '1.5' }}>{p.focus}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
             {/* Lý thuyết ngôn ngữ (Linguistic Theory) Tab - Separate page */}
             {activeTab === 'ly-thuyet' && (
               <div className="page-wrapper">
-                
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="page-intro">
                     <h2 className="page-heading">Lý thuyết ngôn ngữ</h2>
@@ -2034,50 +2171,12 @@ export default function App() {
                       Tìm hiểu sâu sắc các cấu trúc nền tảng của tiếng Nhật. Làm chủ ngữ pháp, âm vị học và hệ thống chữ viết.
                     </p>
                   </div>
-                  
+
                   <div className="streak-badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderColor: 'var(--primary)', fontSize: '12px' }}>
                     <span>{theoryData.roadmapTitle}</span>
                   </div>
                 </div>
 
-                {/* AI Recommendations */}
-                <div>
-                  <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sparkles size={16} /> Gợi ý từ AI
-                  </h3>
-                  
-                  <div className="dashboard-grid">
-                    
-                    {/* Passive Voice lesson box */}
-                    <div className="rec-card primary" style={{ padding: '32px' }}>
-                      <span className="focus-badge" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'white', marginBottom: '8px' }}>
-                        {theoryData.aiRec.badge}
-                      </span>
-                      <h4 style={{ fontSize: '28px', fontWeight: 800 }}>{theoryData.aiRec.title}</h4>
-                      <p className="rec-desc" style={{ marginTop: '12px', fontSize: '15px' }}>
-                        {theoryData.aiRec.desc}
-                      </p>
-                      <button className="rec-btn" style={{ marginTop: '24px', padding: '12px 24px', fontSize: '14px' }} onClick={() => alert('Bắt đầu bài giảng lý thuyết nâng cao!')}>
-                        Bắt đầu học nâng cao <ChevronRight size={14} style={{ display: 'inline', marginLeft: '4px' }} />
-                      </button>
-                    </div>
-
-                    {/* Daily Kanji Core */}
-                    <div className="focus-card" style={{ alignItems: 'center', textAlign: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-light)', fontWeight: 800, textTransform: 'uppercase' }}>Hán tự cốt lõi hàng ngày</span>
-                      <h2 style={{ fontSize: '72px', fontFamily: 'var(--font-jp)', margin: '12px 0', color: 'var(--text-primary)' }}>
-                        {theoryData.kanjiCore.kanji}
-                      </h2>
-                      <p style={{ fontStyle: 'italic', fontSize: '14px', color: 'var(--text-secondary)' }}>{theoryData.kanjiCore.meaning}</p>
-                      
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '12px', width: '100%', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 700 }}>{theoryData.kanjiCore.retained}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 700 }}>{theoryData.kanjiCore.priority}</span>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
 
                 {/* Grid list of skills */}
                 <div>
@@ -2087,24 +2186,33 @@ export default function App() {
                   </div>
 
                   <div className="skills-grid">
-                    {theoryData.skills.map((skill, idx) => (
-                      <div key={idx} className="skill-card">
-                        <div className="skill-header">
-                          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)' }}>Tỷ lệ: {skill.mastery}</span>
+                    {theoryData.skills.map((skill, idx) => {
+                      let countDisplay = 'Đang tải...';
+                      if (skill.name.includes('Kanji')) countDisplay = `${theoryCounts.kanji} mục`;
+                      else if (skill.name.includes('Vocabulary')) countDisplay = `${theoryCounts.vocab} mục`;
+                      else if (skill.name.includes('Grammar')) countDisplay = `${theoryCounts.grammar} mục`;
+                      else if (skill.name.includes('Counter')) countDisplay = `${theoryCounts.counter} phân loại`;
+                      else countDisplay = 'Chưa có dữ liệu';
+
+                      return (
+                        <div key={idx} className="skill-card">
+                          <div className="skill-header">
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)' }}>SỐ LƯỢNG: {countDisplay}</span>
+                          </div>
+                          <h4 className="vocab-jp" style={{ fontSize: '18px', color: 'var(--text-primary)', marginTop: '8px' }}>{skill.name}</h4>
+                          <p className="skill-desc" style={{ marginTop: '4px' }}>{skill.desc}</p>
+                          <button className="skill-btn" style={{ marginTop: 'auto' }} onClick={() => handleOpenTheory(skill.name)}>
+                            Học lý thuyết
+                          </button>
                         </div>
-                        <h4 className="vocab-jp" style={{ fontSize: '18px', color: 'var(--text-primary)', marginTop: '8px' }}>{skill.name}</h4>
-                        <p className="skill-desc" style={{ marginTop: '4px' }}>{skill.desc}</p>
-                        <button className="skill-btn" style={{ marginTop: 'auto' }} onClick={() => alert(`Đang tải học trình lý thuyết của ${skill.name}`)}>
-                          Học lý thuyết
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Progress Metrics card */}
                     <div className="skill-card" style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: 'white' }}>
                       <span style={{ fontSize: '11px', fontWeight: 800, opacity: 0.8 }}>CHỈ SỐ TIẾN ĐỘ</span>
                       <h4 style={{ fontSize: '20px', fontWeight: 800, marginTop: '8px' }}>Chỉ số Tiến độ</h4>
-                      
+
                       <div style={{ margin: '16px 0 8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
                           <span>Mục tiêu tuần</span>
@@ -2127,155 +2235,10 @@ export default function App() {
 
             {/* Luyện Nói */}
             {activeTab === 'speaking' && (
-              <div className="split-layout">
-                <div className="main-column">
-                  <div className="chat-container">
-                    <div className="chat-header">
-                      <span className="chat-header-title">Bản phiên âm đối thoại</span>
-                      <span className="chat-header-badge">Đang hoạt động: N2</span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1 }}>
-                      {chatHistory.map((chat, idx) => (
-                        <div key={idx} className={`chat-bubble ${chat.sender}`}>
-                          <span className="bubble-sender">
-                            {chat.sender === 'teacher' ? <Volume2 size={12} /> : <User size={12} />}
-                            {chat.senderName}
-                          </span>
-                          <p className="bubble-jp">{chat.jp}</p>
-                          <p className="bubble-vi">{chat.vi}</p>
-                        </div>
-                      ))}
-
-                      {isAiSpeaking && (
-                        <div className="speaking-status">
-                          <span>AI Sensei đang nói</span>
-                          <div className="typing-dots">
-                            <div className="typing-dot"></div>
-                            <div className="typing-dot"></div>
-                            <div className="typing-dot"></div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="sidebar-column">
-                  <div className="visualizer-container">
-                    <span className={`visualizer-status ${isRecording ? 'recording' : ''}`}>
-                      {isRecording ? 'ĐANG GHI ÂM GIỌNG NÓI' : 'ĐANG CHỜ PHẢN HỒI'}
-                    </span>
-
-                    <div className="circle-visualizer">
-                      <div className={`visualizer-ring ${isRecording ? 'recording' : ''}`}>
-                        {isRecording ? (
-                          <div className="waveform-container">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1].map((h, i) => (
-                              <div 
-                                key={i} 
-                                className="wave-bar active" 
-                                style={{ 
-                                  height: `${h * 4}px`,
-                                  animationDelay: `${i * 0.08}s`
-                                }}
-                              ></div>
-                            ))}
-                          </div>
-                        ) : (
-                          <Mic size={48} className="text-light" />
-                        )}
-                      </div>
-                      {isRecording && <div className="visualizer-pulse animate-pulse-ring"></div>}
-                    </div>
-
-                    <div className="topic-card">
-                      <span className="topic-label">Chủ đề hội thoại</span>
-                      <h4 className="topic-title">{speakingData.activeTopic}</h4>
-                      <div className="topic-tags">
-                        {speakingData.tags.map((tag, i) => (
-                          <span key={i} className="topic-tag">{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button 
-                      className={`record-btn ${isRecording ? 'recording' : ''}`}
-                      onClick={handleMicrophoneClick}
-                      disabled={isAiSpeaking}
-                    >
-                      {isRecording ? <X size={32} /> : <Mic size={32} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <VoiceChatPractice />
             )}
 
-            {/* Luyện Viết */}
-            {activeTab === 'writing' && (
-              <div className="split-layout equal">
-                <div className="main-column">
-                  <div className="writing-prompt-card">
-                    <div className="prompt-icon-box"><FileText size={24} /></div>
-                    <div className="prompt-details">
-                      <span className="prompt-badge">Đề bài viết</span>
-                      <h4 className="prompt-title-en">{writingData.promptTitleEn}</h4>
-                      <p className="prompt-title-jp">{writingData.promptTitleJp}</p>
-                      <div className="prompt-tags">
-                        {writingData.tags.map((tag, i) => (
-                          <span key={i} className="prompt-tag">{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="editor-container">
-                    <div className="editor-toolbar">
-                      <div className="toolbar-left">
-                        <button className="toolbar-btn" onClick={() => setWritingText(writingData.initialText)}><RotateCcw size={16} /></button>
-                      </div>
-                      <div className="toolbar-right">
-                        <span className="toolbar-info">Số ký tự: {writingText.length}</span>
-                      </div>
-                    </div>
-
-                    <div className="editor-area-wrapper">
-                      <div className="editor-backdrop">{renderHighlightedText()}</div>
-                      <textarea className="editor-textarea" value={writingText} onChange={(e) => setWritingText(e.target.value)} />
-                    </div>
-
-                    {showWritingToast && (
-                      <div className="editor-suggestion-toast">
-                        <div className="toast-message-box">
-                          <Sparkles size={16} className="toast-icon" />
-                          <span className="toast-text">{writingData.aiSuggestion}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button className="toast-action-btn" onClick={handleAddToastSuggestion}>Thêm giúp tôi</button>
-                          <button className="toast-close" onClick={() => setShowWritingToast(false)}><X size={16} /></button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="sidebar-column">
-                  <span className="section-title">Phản hồi từ AI</span>
-                  {writingIssues.map(issue => !issue.solved && (
-                    <div key={issue.id} className="issue-card error">
-                      <span className="issue-label">{issue.label}</span>
-                      <div className="issue-correction">
-                        <span className="original-val">{issue.original}</span>
-                        <ChevronRight size={14} className="issue-arrow" />
-                        <span className="corrected-val">{issue.corrected}</span>
-                      </div>
-                      <p className="issue-desc">{issue.desc}</p>
-                      <button className="apply-btn" onClick={() => applyCorrection(issue)}>Áp dụng sửa lỗi</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Old Luyện Viết block removed to prevent duplication */}
 
             {/* Luyện Kanji */}
             {activeTab === 'kanji' && (
@@ -2291,8 +2254,8 @@ export default function App() {
                     <h4 className="question-prompt">{kanjiQuizData[kanjiIndex].question}</h4>
                     <div className="options-grid">
                       {kanjiQuizData[kanjiIndex].options.map(option => (
-                        <button 
-                          key={option.key} 
+                        <button
+                          key={option.key}
                           className="option-btn"
                           onClick={() => {
                             setSelectedKanjiOption(option.key);
@@ -2335,7 +2298,7 @@ export default function App() {
                   </div>
 
                   <div className="vocab-main-card" style={{ display: 'flex', flexDirection: 'column', gap: '32px', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '40px', backgroundColor: 'var(--bg-card)', position: 'relative', alignItems: 'center' }}>
-                    
+
                     {/* Book Icon */}
                     <div style={{ color: 'var(--primary)', display: 'flex', justifyContent: 'center' }}>
                       <BookOpen size={48} />
@@ -2347,7 +2310,7 @@ export default function App() {
                           {selectedVocabOption ? vocabQuizData[vocabIndex].options.find(o => o.key === selectedVocabOption).text : '__________'}
                         </span> してください。
                       </span>
-                      
+
                       <div style={{ backgroundColor: 'var(--primary-light)', padding: '12px 24px', borderRadius: 'var(--radius-md)', display: 'inline-block', margin: '0 auto', maxWidth: '80%' }}>
                         <span className="sentence-vi" style={{ fontSize: '15px', color: 'var(--primary)', fontWeight: 600 }}>
                           {vocabQuizData[vocabIndex].sentenceVi}
@@ -2376,10 +2339,10 @@ export default function App() {
                           bgStyle = 'rgba(239, 68, 68, 0.1)';
                         }
                       }
-                      
+
                       return (
-                        <button 
-                          key={opt.key} 
+                        <button
+                          key={opt.key}
                           className="vocab-option-card-new"
                           onClick={() => {
                             if (!isVocabAnswerChecked) {
@@ -2400,16 +2363,16 @@ export default function App() {
                             position: 'relative'
                           }}
                         >
-                          <div 
-                            className="vocab-option-label" 
-                            style={{ 
-                              width: '32px', 
-                              height: '32px', 
-                              borderRadius: '50%', 
-                              backgroundColor: isSelected ? 'var(--primary)' : 'var(--bg-main)', 
+                          <div
+                            className="vocab-option-label"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              backgroundColor: isSelected ? 'var(--primary)' : 'var(--bg-main)',
                               color: isSelected ? 'white' : 'var(--text-secondary)',
-                              display: 'flex', 
-                              alignItems: 'center', 
+                              display: 'flex',
+                              alignItems: 'center',
                               justifyContent: 'center',
                               fontWeight: 800,
                               flexShrink: 0
@@ -2428,8 +2391,8 @@ export default function App() {
 
                   {/* Actions Row */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                    <button 
-                      className="action-text-btn" 
+                    <button
+                      className="action-text-btn"
                       onClick={() => {
                         setSelectedVocabOption(null);
                         setIsVocabAnswerChecked(false);
@@ -2438,8 +2401,8 @@ export default function App() {
                     >
                       Bỏ qua
                     </button>
-                    
-                    <button 
+
+                    <button
                       className="action-filled-btn"
                       disabled={selectedVocabOption === null}
                       onClick={() => {
@@ -2542,9 +2505,9 @@ export default function App() {
 
                   {/* Office Meeting Image */}
                   <div style={{ width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                    <img 
-                      src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400" 
-                      alt="Office Meeting" 
+                    <img
+                      src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400"
+                      alt="Office Meeting"
                       style={{ width: '100%', height: '140px', objectFit: 'cover' }}
                     />
                   </div>
@@ -2566,7 +2529,7 @@ export default function App() {
                   </div>
 
                   <div className="vocab-main-card" style={{ display: 'flex', flexDirection: 'column', gap: '24px', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '32px', backgroundColor: 'var(--bg-card)' }}>
-                    
+
                     {/* Dịch nghĩa */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: 'var(--text-secondary)', fontSize: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
                       <span style={{ fontWeight: 800, whiteSpace: 'nowrap' }}>文 Dịch nghĩa:</span>
@@ -2574,12 +2537,12 @@ export default function App() {
                     </div>
 
                     {/* Target Answer Area (Dashed border) */}
-                    <div 
-                      style={{ 
-                        minHeight: '80px', 
-                        border: '2px dashed var(--primary-light)', 
-                        borderRadius: 'var(--radius-md)', 
-                        padding: '16px', 
+                    <div
+                      style={{
+                        minHeight: '80px',
+                        border: '2px dashed var(--primary-light)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '16px',
                         backgroundColor: 'var(--bg-main)',
                         display: 'flex',
                         flexWrap: 'wrap',
@@ -2623,12 +2586,12 @@ export default function App() {
                     </div>
 
                     {/* Word Choices Scrambled */}
-                    <div 
-                      style={{ 
-                        display: 'flex', 
-                        flexWrap: 'wrap', 
-                        gap: '12px', 
-                        justifyContent: 'center', 
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                        justifyContent: 'center',
                         padding: '16px 0',
                         minHeight: '60px'
                       }}
@@ -2664,7 +2627,7 @@ export default function App() {
 
                     {/* Verify Actions */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                      <button 
+                      <button
                         className="action-text-btn"
                         onClick={() => {
                           setGrammarSelected([]);
@@ -2677,7 +2640,7 @@ export default function App() {
                         Xóa hết
                       </button>
 
-                      <button 
+                      <button
                         className="action-filled-btn"
                         disabled={grammarSelected.length === 0}
                         onClick={() => {
@@ -2709,12 +2672,12 @@ export default function App() {
 
                     {/* Verify results feedback */}
                     {isGrammarChecked && (
-                      <div 
-                        style={{ 
-                          padding: '16px', 
-                          borderRadius: '6px', 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                      <div
+                        style={{
+                          padding: '16px',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '12px',
                           backgroundColor: isGrammarCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                           border: `1px solid ${isGrammarCorrect ? 'var(--success)' : 'var(--error)'}`,
@@ -2799,12 +2762,12 @@ export default function App() {
                     }
 
                     return (
-                      <div 
-                        key={idx} 
-                        className="focus-card" 
-                        style={{ 
-                          padding: '16px 20px', 
-                          gap: '8px', 
+                      <div
+                        key={idx}
+                        className="focus-card"
+                        style={{
+                          padding: '16px 20px',
+                          gap: '8px',
                           borderLeft: borderLeft,
                           backgroundColor: cardBg,
                           borderRadius: 'var(--radius-md)',
@@ -2831,9 +2794,9 @@ export default function App() {
 
                   {/* Desktop and Pen Illustration Image */}
                   <div style={{ width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)', marginTop: 'auto' }}>
-                    <img 
-                      src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400" 
-                      alt="Study Desk" 
+                    <img
+                      src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400"
+                      alt="Study Desk"
                       style={{ width: '100%', height: '140px', objectFit: 'cover' }}
                     />
                   </div>
@@ -2849,12 +2812,12 @@ export default function App() {
                     <h3 className="mock-test-title" style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)' }}>
                       Luyện tập Đọc hiểu
                     </h3>
-                    
+
                     <div className="furigana-toggle-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span className="furigana-toggle-lbl" style={{ fontSize: '12px', fontWeight: 800 }}>HIỂN THỊ FURIGANA</span>
                       <label className="toggle-switch">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={showFurigana}
                           onChange={(e) => setShowFurigana(e.target.checked)}
                         />
@@ -2864,7 +2827,7 @@ export default function App() {
                   </div>
 
                   <div className="reading-passage-card" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '40px', backgroundColor: 'var(--bg-card)', position: 'relative' }}>
-                    
+
                     {/* Furigana title */}
                     <div className="reading-title-jp" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '16px', marginBottom: '24px' }}>
                       {showFurigana ? (
@@ -2881,7 +2844,7 @@ export default function App() {
                       {readingQuizData[readingIndex].passageMarkup.map((item, idx) => {
                         let isUnderline = item.isUnderline;
                         let textNode = item.text === 'ot' ? 'と' : item.text === 'hown' ? 'ほう' : item.text === 'どうn' ? 'どうにゅう' : item.text;
-                        
+
                         let element = showFurigana && item.ruby ? (
                           <ruby key={idx} style={{ cursor: isUnderline ? 'pointer' : 'default' }}>
                             {textNode}
@@ -2895,8 +2858,8 @@ export default function App() {
 
                         if (isUnderline) {
                           return (
-                            <span 
-                              key={idx} 
+                            <span
+                              key={idx}
                               className="passage-underline-btn"
                               onClick={() => setDefinitionTooltip(item.wordMean)}
                               title="Click để xem nghĩa từ vựng"
@@ -2913,12 +2876,12 @@ export default function App() {
 
                     {/* Word explanation tooltip */}
                     {definitionTooltip && (
-                      <div 
-                        style={{ 
-                          marginTop: '24px', 
-                          padding: '16px 20px', 
-                          backgroundColor: 'var(--primary-light)', 
-                          borderLeft: '4px solid var(--primary)', 
+                      <div
+                        style={{
+                          marginTop: '24px',
+                          padding: '16px 20px',
+                          backgroundColor: 'var(--primary-light)',
+                          borderLeft: '4px solid var(--primary)',
                           borderRadius: '6px',
                           display: 'flex',
                           justifyContent: 'space-between',
@@ -2934,7 +2897,7 @@ export default function App() {
                             {definitionTooltip}
                           </span>
                         </div>
-                        <button 
+                        <button
                           onClick={() => setDefinitionTooltip(null)}
                           style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 800, padding: '4px' }}
                         >
@@ -2949,7 +2912,7 @@ export default function App() {
                     <button className="action-text-btn" onClick={() => setActiveTab('bai-tap')} style={{ fontWeight: 700 }}>
                       Bỏ qua
                     </button>
-                    <button 
+                    <button
                       className="action-filled-btn"
                       onClick={() => {
                         if (isReadingAnswerChecked) {
@@ -2979,7 +2942,7 @@ export default function App() {
                   <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-light)', letterSpacing: '0.5px' }}>
                     CÂU HỎI 1 / 4
                   </span>
-                  
+
                   <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.4 }}>
                     {readingQuizData[readingIndex].question}
                   </h4>
@@ -3026,11 +2989,11 @@ export default function App() {
                             transition: 'all 0.2s'
                           }}
                         >
-                          <div 
-                            style={{ 
-                              width: '20px', 
-                              height: '20px', 
-                              borderRadius: '50%', 
+                          <div
+                            style={{
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
                               border: isSelected ? '6px solid var(--primary)' : '2px solid var(--border)',
                               backgroundColor: 'white',
                               flexShrink: 0
@@ -3061,7 +3024,7 @@ export default function App() {
             {activeTab === 'listening' && (
               <div className="split-layout">
                 <div className="main-column" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  
+
                   {/* Audio player card */}
                   <div className="audio-player-card" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <div className="audio-icon-box" style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -3079,8 +3042,8 @@ export default function App() {
 
                     <div className="audio-controls-row" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       {/* Play/pause */}
-                      <button 
-                        className="audio-play-btn" 
+                      <button
+                        className="audio-play-btn"
                         onClick={() => setAudioPlaying(!audioPlaying)}
                         style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                       >
@@ -3088,8 +3051,8 @@ export default function App() {
                       </button>
 
                       {/* Progress bar */}
-                      <div 
-                        className="audio-progress-bar-container" 
+                      <div
+                        className="audio-progress-bar-container"
                         onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           const clickX = e.clientX - rect.left;
@@ -3099,8 +3062,8 @@ export default function App() {
                         }}
                         style={{ width: '160px', height: '6px', backgroundColor: 'var(--bg-main)', borderRadius: '100px', cursor: 'pointer', position: 'relative' }}
                       >
-                        <div 
-                          className="audio-progress-fill" 
+                        <div
+                          className="audio-progress-fill"
                           style={{ width: `${(audioTime / listeningQuizData[listeningIndex].fullDuration) * 100}%`, height: '100%', backgroundColor: 'var(--primary)', borderRadius: '100px' }}
                         ></div>
                       </div>
@@ -3115,14 +3078,14 @@ export default function App() {
                           <button
                             key={rate}
                             onClick={() => setAudioRate(rate)}
-                            style={{ 
-                              padding: '4px 8px', 
-                              fontSize: '11px', 
-                              fontWeight: 800, 
-                              border: 'none', 
-                              backgroundColor: audioRate === rate ? 'var(--primary-light)' : 'var(--bg-card)', 
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              border: 'none',
+                              backgroundColor: audioRate === rate ? 'var(--primary-light)' : 'var(--bg-card)',
                               color: audioRate === rate ? 'var(--primary)' : 'var(--text-secondary)',
-                              cursor: 'pointer' 
+                              cursor: 'pointer'
                             }}
                           >
                             {rate}x
@@ -3138,8 +3101,8 @@ export default function App() {
                       <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-light)', letterSpacing: '0.5px' }}>
                         BẢN PHỤ ĐỀ TRỰC TIẾP (NHẬT - VIỆT)
                       </span>
-                      <button 
-                        className="subtitle-show-all-btn" 
+                      <button
+                        className="subtitle-show-all-btn"
                         onClick={() => setShowAllSubtitles(!showAllSubtitles)}
                         style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
                       >
@@ -3150,17 +3113,17 @@ export default function App() {
                     <div className="subtitle-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '240px', overflowY: 'auto' }}>
                       {listeningQuizData[listeningIndex].dialog.map((line, idx) => {
                         const isBlurred = audioTime < line.time && !showAllSubtitles;
-                        
+
                         return (
-                          <div 
-                            key={idx} 
+                          <div
+                            key={idx}
                             className={`subtitle-item ${isBlurred ? 'blurred' : ''}`}
-                            style={{ 
-                              display: 'grid', 
-                              gridTemplateColumns: '48px 1fr', 
-                              gap: '12px', 
-                              fontSize: '15px', 
-                              lineHeight: '1.6', 
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '48px 1fr',
+                              gap: '12px',
+                              fontSize: '15px',
+                              lineHeight: '1.6',
                               transition: 'all 0.3s',
                               filter: isBlurred ? 'blur(4px)' : 'none',
                               opacity: isBlurred ? 0.35 : 1,
@@ -3234,11 +3197,11 @@ export default function App() {
                               transition: 'all 0.2s'
                             }}
                           >
-                            <div 
-                              style={{ 
-                                width: '18px', 
-                                height: '18px', 
-                                borderRadius: '50%', 
+                            <div
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '50%',
                                 border: isSelected ? '5px solid var(--primary)' : '2px solid var(--border)',
                                 backgroundColor: 'white',
                                 flexShrink: 0
@@ -3253,7 +3216,7 @@ export default function App() {
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                      <button 
+                      <button
                         className="action-filled-btn"
                         disabled={selectedListeningOption === null}
                         onClick={() => {
@@ -3315,14 +3278,14 @@ export default function App() {
             {/* Hồ sơ cá nhân (Student Profile view) */}
             {activeTab === 'profile' && (
               <div className="page-wrapper">
-                
+
                 {/* Okaeri Card & Pro Card */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                  
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexGrow: 1 }}>
-                    <img 
-                      src={currentUser.avatar} 
-                      alt="Avatar" 
+                    <img
+                      src={currentUser.avatar}
+                      alt="Avatar"
                       style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--primary-light)' }}
                     />
                     <div>
@@ -3353,7 +3316,7 @@ export default function App() {
 
                 {/* Stats cards grid */}
                 <div className="skills-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-                  
+
                   {/* Streak */}
                   <div className="skill-card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '16px 20px', gap: '16px' }}>
                     <div className="custom-icon" style={{ backgroundColor: '#fef2f2', color: '#ef4444' }}>
@@ -3407,7 +3370,7 @@ export default function App() {
 
                 {/* Dashboard layout main content split */}
                 <div className="split-layout" style={{ height: 'auto', overflow: 'visible' }}>
-                  
+
                   {/* Left: SVG learning chart */}
                   <div className="focus-card" style={{ gap: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3426,9 +3389,9 @@ export default function App() {
                         <line x1="40" y1="170" x2="480" y2="170" stroke="var(--border)" strokeWidth="0.5" />
 
                         <path d="M 40 170 L 40 120 L 113 90 L 186 130 L 259 80 L 332 50 L 405 110 L 478 170 Z" fill="rgba(60, 48, 211, 0.05)" />
-                        
+
                         <path d="M 40 120 L 113 90 L 186 130 L 259 80 L 332 50 L 405 110 L 478 70" fill="none" stroke="var(--primary)" strokeWidth="3" />
-                        
+
                         <line x1="40" y1="100" x2="480" y2="100" stroke="var(--success)" strokeWidth="2" strokeDasharray="6" />
 
                         <circle cx="40" cy="120" r="5" fill="var(--primary)" />
@@ -3464,7 +3427,7 @@ export default function App() {
 
                   {/* Right: Achievements & Settings */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    
+
                     {/* Achievements */}
                     <div className="focus-card" style={{ padding: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3499,7 +3462,7 @@ export default function App() {
                     {/* Quick Settings */}
                     <div className="focus-card" style={{ padding: '20px' }}>
                       <span className="recent-activity-title">Cài đặt nhanh</span>
-                      
+
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }} onClick={handleToggleUserAccount}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -3532,8 +3495,8 @@ export default function App() {
                             <Moon size={16} className="text-primary" />
                             <span>Giao diện tối</span>
                           </div>
-                          <button 
-                            className="action-btn" 
+                          <button
+                            className="action-btn"
                             onClick={() => setDarkMode(!darkMode)}
                             style={{ color: 'var(--primary)' }}
                           >
@@ -3627,7 +3590,7 @@ export default function App() {
       </main>
 
       {/* Floating chatbot assistant */}
-      <button 
+      <button
         className="float-chat-btn animate-pulse-ring"
         onClick={() => setShowHelperChat(!showHelperChat)}
         title="Trợ lý AI Sensei trực tuyến"
@@ -3643,7 +3606,7 @@ export default function App() {
               <X size={16} />
             </button>
           </div>
-          
+
           <div className="helper-chat-body">
             {helperMessages.map((msg, idx) => (
               <div key={idx} className={`helper-bubble ${msg.sender}`}>
@@ -3653,8 +3616,8 @@ export default function App() {
           </div>
 
           <div className="helper-chat-input-row">
-            <input 
-              type="text" 
+            <input
+              type="text"
               className="helper-input"
               placeholder="Hỏi về ngữ pháp, bài tập..."
               value={helperInput}
