@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Book, BookOpen, Headphones, Edit3, ChevronLeft, AlertCircle, Lock, Clock, Sparkles, Loader2 } from 'lucide-react';
-import { evaluateWrongAnswersWithRAG } from '../agents/FeedbackRAGAgent';
-import { monitorPlannerApp } from '../agents/MonitorPlannerGraph';
 
 export default function QuizApp({ activeTab, setActiveTab }) {
   const [quizCounts, setQuizCounts] = useState({ kanji: 0, vocabulary: 0, grammar: 0, reading: 0, listening: 0 });
@@ -198,7 +196,12 @@ export default function QuizApp({ activeTab, setActiveTab }) {
       if (finalWrongQs.length > 0) {
         setIsRagLoading(true);
         try {
-          const explanations = await evaluateWrongAnswersWithRAG(finalWrongQs);
+          const response = await fetch('http://localhost:3000/api/agents/feedback-rag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exercise_type: 'quiz', wrongQs: finalWrongQs })
+          });
+          const explanations = await response.json();
           const explanationsMap = {};
           explanations.forEach(ex => {
             explanationsMap[ex.question_id] = ex.ai_explanation;
@@ -227,11 +230,14 @@ export default function QuizApp({ activeTab, setActiveTab }) {
             
             const currentRoadmap = oldAttempts?.[0]?.roadmap_json || { weaknesses: [], strengths: [] };
             
-            const result = await monitorPlannerApp.invoke({
-              currentRoadmap: currentRoadmap,
-              testResults: finalTestResultsRaw
+            const response = await fetch('http://localhost:3000/api/agents/monitor', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ recent_activities: { currentRoadmap, testResults: finalTestResultsRaw } })
             });
-            finalRoadmap = result.newRoadmap;
+            const result = await response.json();
+            // result.message contains JSON string of roadmap because we adjusted monitor API to just return text or we need to parse it
+            finalRoadmap = JSON.parse(result.message);
 
             // Ghi đè next_day_recommendation vào config
             if (finalRoadmap && finalRoadmap.next_quiz_config && finalRoadmap.next_quiz_config.reason) {
@@ -290,7 +296,12 @@ export default function QuizApp({ activeTab, setActiveTab }) {
     if (wrongQs.length > 0) {
       setIsRagLoading(true);
         try {
-          const explanations = await evaluateWrongAnswersWithRAG(wrongQs);
+          const response = await fetch('http://localhost:3000/api/agents/feedback-rag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exercise_type: 'quiz', wrongQs: wrongQs })
+          });
+          const explanations = await response.json();
           const explanationsMap = {};
           explanations.forEach(ex => {
             explanationsMap[ex.question_id] = ex.ai_explanation;
@@ -321,13 +332,14 @@ export default function QuizApp({ activeTab, setActiveTab }) {
             
             const currentRoadmap = oldAttempts?.[0]?.roadmap_json || { weaknesses: [], strengths: [] };
             
-            // Chạy đồ thị trạng thái LangGraph
-            const result = await monitorPlannerApp.invoke({
-              currentRoadmap: currentRoadmap,
-              testResults: testResultsRaw
+            const response = await fetch('http://localhost:3000/api/agents/monitor', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ recent_activities: { currentRoadmap, testResults: testResultsRaw } })
             });
+            const result = await response.json();
             
-            finalRoadmap = result.newRoadmap;
+            finalRoadmap = JSON.parse(result.message);
           } catch (graphErr) {
             console.error("LangGraph Evolution Error:", graphErr);
           } finally {

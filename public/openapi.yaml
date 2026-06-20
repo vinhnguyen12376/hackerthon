@@ -1,0 +1,195 @@
+openapi: 3.0.0
+info:
+  title: Nihongo Mentor AI Agents API
+  description: Tài liệu API ảo (Virtual Endpoints) cho 3 AI Agents tự chủ trong hệ thống Nihongo Mentor.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5173
+    description: Frontend Development Server
+paths:
+  /api/agents/diagnostic:
+    post:
+      tags:
+        - Diagnostic & Planner Agent
+      summary: Đánh giá năng lực đầu vào và vạch lộ trình
+      description: Gửi dữ liệu kết quả bài kiểm tra đầu vào (Diagnostic Test) của học viên để Agent phân tích và trả về lộ trình học cá nhân hóa.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiagnosticRequest'
+      responses:
+        '200':
+          description: Lộ trình học tập cá nhân hóa được tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoadmapResponse'
+
+  /api/agents/feedback-rag:
+    post:
+      tags:
+        - Feedback RAG Agent (AI Sensei)
+      summary: Chữa bài và giải thích lỗi sai
+      description: Gửi câu trả lời sai của học viên trong Quiz hoặc đoạn văn trong phần Writing để AI Sensei phân tích dựa trên Supabase RAG và Jisho.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+      responses:
+        '200':
+          description: Lời giải thích và kiến thức chuẩn xác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackResponse'
+
+  /api/agents/monitor:
+    post:
+      tags:
+        - Monitor & Planner Agent
+      summary: Giám sát tiến độ và điều chỉnh lộ trình
+      description: Gửi lịch sử học tập gần đây của học viên để đánh giá tiến độ so với lộ trình đã đề ra.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorRequest'
+      responses:
+        '200':
+          description: Báo cáo giám sát và gợi ý điều chỉnh
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorResponse'
+
+components:
+  schemas:
+    DiagnosticRequest:
+      type: object
+      required:
+        - student_id
+        - test_results
+      properties:
+        student_id:
+          type: string
+          example: "STU-001"
+        test_results:
+          type: object
+          properties:
+            grammar_score:
+              type: integer
+              example: 10
+            vocab_score:
+              type: integer
+              example: 8
+            kanji_score:
+              type: integer
+              example: 5
+            total_time_seconds:
+              type: integer
+              example: 600
+
+    RoadmapResponse:
+      type: object
+      properties:
+        current_level:
+          type: string
+          example: "N5 Cơ bản"
+        weaknesses:
+          type: array
+          items:
+            type: string
+          example: ["Kanji (ít nét)", "Trợ từ NI/DE"]
+        roadmap_modules:
+          type: array
+          items:
+            type: object
+            properties:
+              module_name:
+                type: string
+              estimated_days:
+                type: integer
+          example:
+            - module_name: "Ôn tập Kanji cơ bản"
+              estimated_days: 3
+            - module_name: "Củng cố trợ từ chỉ địa điểm"
+              estimated_days: 2
+
+    FeedbackRequest:
+      type: object
+      required:
+        - exercise_type
+        - user_answer
+      properties:
+        exercise_type:
+          type: string
+          enum: [quiz, writing]
+          example: "quiz"
+        user_answer:
+          type: string
+          example: "私は猫が好き"
+        correct_answer:
+          type: string
+          example: "私は猫が好きです"
+          description: Có thể null nếu là dạng Writing tự do
+        context:
+          type: string
+          example: "Ngữ pháp thể lịch sự (Desu/Masu)"
+
+    FeedbackResponse:
+      type: object
+      properties:
+        is_error:
+          type: boolean
+          example: true
+        error_type:
+          type: string
+          example: "Thiếu đuôi câu lịch sự"
+        explanation:
+          type: string
+          example: "Câu của bạn đúng ngữ pháp thể thông thường, nhưng bài tập yêu cầu dùng thể lịch sự. Bạn cần thêm 'desu' vào cuối."
+        reference_source:
+          type: string
+          example: "Supabase Grammar DB (ID: GR-012)"
+
+    MonitorRequest:
+      type: object
+      required:
+        - student_id
+        - recent_activities
+      properties:
+        student_id:
+          type: string
+          example: "STU-001"
+        recent_activities:
+          type: array
+          items:
+            type: object
+            properties:
+              exercise_id:
+                type: string
+              score:
+                type: integer
+              date:
+                type: string
+
+    MonitorResponse:
+      type: object
+      properties:
+        progress_status:
+          type: string
+          enum: [on_track, behind, ahead]
+          example: "behind"
+        message:
+          type: string
+          example: "Bạn đang làm rất tốt phần Ngữ pháp, nhưng tiến độ phần Kanji đang chậm hơn dự kiến 2 ngày. Hãy làm thêm 5 bài tập Kanji hôm nay nhé."
+        suggested_actions:
+          type: array
+          items:
+            type: string
+          example: ["Làm bài test Kanji số 3", "Đọc lại lý thuyết Kanji bộ Nhân"]

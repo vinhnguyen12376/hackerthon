@@ -64,6 +64,7 @@ import TheoryViewer from './components/TheoryViewer';
 import DiagnosticTest from './components/DiagnosticTest';
 import WritingPractice from './components/WritingPractice';
 import VoiceChatPractice from './components/VoiceChatPractice';
+import SwaggerDocs from './components/SwaggerDocs';
 
 export default function App() {
   // Navigation State
@@ -197,7 +198,7 @@ export default function App() {
             if (data && data.length > 0 && data[0].roadmap_json) {
               let parsedRoadmap = data[0].roadmap_json;
               if (typeof parsedRoadmap === 'string') {
-                try { parsedRoadmap = JSON.parse(parsedRoadmap); } catch(e) {}
+                try { parsedRoadmap = JSON.parse(parsedRoadmap); } catch (e) { }
               }
               setRoadmap(parsedRoadmap);
             } else {
@@ -237,7 +238,7 @@ export default function App() {
             if (data && data.length > 0 && data[0].roadmap_json) {
               let parsedRoadmap = data[0].roadmap_json;
               if (typeof parsedRoadmap === 'string') {
-                try { parsedRoadmap = JSON.parse(parsedRoadmap); } catch(e) {}
+                try { parsedRoadmap = JSON.parse(parsedRoadmap); } catch (e) { }
               }
               setRoadmap(parsedRoadmap);
             } else {
@@ -1962,6 +1963,7 @@ export default function App() {
             {activeTab === 'diagnostic_test' && <DiagnosticTest setActiveTab={setActiveTab} setRoadmap={setRoadmap} currentUser={currentUser} />}
             {activeTab === 'writing' && <WritingPractice setActiveTab={setActiveTab} />}
             {activeTab === 'theory_viewer' && <TheoryViewer theoryCategory={theoryCategory} setActiveTab={setActiveTab} />}
+            {activeTab === 'api-docs' && <SwaggerDocs />}
             {activeTab === 'bai-tap-old' && (
 
               <div className="page-wrapper">

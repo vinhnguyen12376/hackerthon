@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { ChevronLeft, Loader2, AlertCircle, Sparkles } from 'lucide-react';
-import { generateRoadmapWithAgent } from '../agents/DiagnosticAgent';
 
 export default function DiagnosticTest({ setActiveTab, setRoadmap, currentUser }) {
   const [questions, setQuestions] = useState([]);
@@ -63,7 +62,15 @@ export default function DiagnosticTest({ setActiveTab, setRoadmap, currentUser }
 
     setSubmitting(true);
     try {
-      const realRoadmap = await generateRoadmapWithAgent(detailedResults);
+      const response = await fetch('http://localhost:3000/api/agents/diagnostic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test_results: detailedResults })
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const realRoadmap = await response.json();
       
       // Calculate individual scores
       const getSkillScore = (skill) => {

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { analyzeWritingWithAgent } from '../agents/FeedbackRAGAgent';
 import { Loader2, CheckCircle, AlertCircle, Sparkles, BookOpen, ChevronRight, X, PenTool, Search } from 'lucide-react';
 
 export default function WritingPractice({ setActiveTab }) {
@@ -17,7 +16,12 @@ export default function WritingPractice({ setActiveTab }) {
     
     setIsChecking(true);
     try {
-      const foundErrors = await analyzeWritingWithAgent(text);
+      const response = await fetch('http://localhost:3000/api/agents/feedback-rag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exercise_type: 'writing', text: text })
+      });
+      const foundErrors = await response.json();
       setErrors(foundErrors);
       if (activeError && !foundErrors.find(e => e.wrong_text === activeError.wrong_text)) {
         setActiveError(null);
