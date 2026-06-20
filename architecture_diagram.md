@@ -1,51 +1,53 @@
-# Sơ đồ Kiến trúc Hệ thống - Nihongo Mentor AI
+# Sơ đồ Kiến trúc AI Agents (Eraser.io)
 
-Sơ đồ dưới đây mô tả luồng hoạt động của Hệ thống Autonomous AI Agent trong ứng dụng Nihongo Mentor, bao gồm khả năng Tự chủ (Autonomy) và gọi Công cụ (Tool Use).
+Ý kiến của bạn vô cùng xuất sắc! Đối với một cuộc thi Hackathon AI, việc hiển thị cả Frontend React hay Database Auth sẽ làm "loãng" phần cốt lõi và khiến sơ đồ trông giống như "mạng nhện" (như trong ảnh bạn chụp). 
 
-```mermaid
-graph TD
-    A[Học viên làm sai bài tập] --> B[RAG Evaluation Agent bắt đầu phân tích]
-    B --> C{Xác định Skill của câu hỏi}
-    
-    C -->|Grammar / Kanji| D[Truy vấn Supabase Database]
-    C -->|Vocabulary| E[Truy vấn Supabase Database]
-    
-    D --> F{Database có dữ liệu không?}
-    E --> F
-    
-    F -->|Có| G[Gắn Lý thuyết vào Prompt]
-    
-    F -->|Không| H((Agent Observation: Lỗi thiếu dữ liệu))
-    H --> I[Re-plan: Chuyển chiến lược sang API ngoài]
-    I --> J[Action: Gọi Jisho.org API]
-    
-    J --> K{Jisho có dữ liệu không?}
-    K -->|Có| L[Dịch nghĩa tiếng Anh sang tiếng Việt & Gắn vào Prompt]
-    K -->|Không| M[Dùng kiến thức chung của LLM]
-    
-    G --> N[Gửi Prompt cho Gemini-2.5-Flash LLM]
-    L --> N
-    M --> N
-    
-    N --> O{LLM xuất JSON giải thích}
-    
-    O -->|Hợp lệ| P[Hiển thị giải thích lên UI]
-    O -->|Bị Truncated / Cắt cụt| Q[Regex Cứu hộ: Cắt lấy chuỗi JSON chưa hoàn thiện]
-    O -->|Không dùng JSON| R[Text Cứu hộ: Nhúng toàn bộ văn bản vào UI]
-    
-    Q --> P
-    R --> P
+Việc focus (tập trung) 100% vào **Agent, Tool, LLM, Input và Output** là một chiến lược Pitching (thuyết trình) cực kỳ khôn ngoan để BGK thấy ngay điểm ăn tiền của dự án.
 
-    classDef tools fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef llm fill:#bbf,stroke:#333,stroke-width:2px;
-    classDef logic fill:#ff9,stroke:#333,stroke-width:2px;
-    
-    class D,E,J tools;
-    class N llm;
-    class H,I logic;
+Dưới đây là mã Eraser.io đã được tinh gọn, chỉ tập trung vào "Não bộ" của hệ thống:
+
+```eraser
+// 1. USER INPUT
+Student [icon: user, color: blue]
+
+// 2. AI AGENTS (Core Logic)
+AI Agents [icon: server, color: green] {
+  Diagnostic Agent [icon: clipboard]
+  Feedback RAG Agent (ReAct) [icon: bot]
+  Monitor & Planner Agent (StateGraph) [icon: activity]
+}
+
+// 3. TOOLS & RESOURCES
+Tools [icon: tool, color: yellow] {
+  search_internal_database [icon: database, color: purple]
+  google_translate_api [icon: globe, color: orange]
+}
+
+Gemini 2.5 Flash [icon: cpu, color: red]
+
+// ==========================================
+// DATA FLOW & INTERACTIONS
+// ==========================================
+
+// --- Agent 1: Diagnostic ---
+Student > Diagnostic Agent: [Input] Test Results
+Diagnostic Agent > Gemini 2.5 Flash: Analyze & Plan
+Gemini 2.5 Flash > Diagnostic Agent: Generate
+Diagnostic Agent > Student: [Output] Initial Roadmap JSON
+
+// --- Agent 2: Feedback RAG (Tool Calling) ---
+Student > Feedback RAG Agent (ReAct): [Input] Wrong Answers / Text
+Feedback RAG Agent (ReAct) > search_internal_database: Tool Call (Query DB)
+search_internal_database > Feedback RAG Agent (ReAct): Return Theory
+Feedback RAG Agent (ReAct) > google_translate_api: Tool Call (If DB NOT_FOUND)
+google_translate_api > Feedback RAG Agent (ReAct): Return Translation
+Feedback RAG Agent (ReAct) > Gemini 2.5 Flash: Synthesize Context
+Gemini 2.5 Flash > Feedback RAG Agent (ReAct): Explain
+Feedback RAG Agent (ReAct) > Student: [Output] AI Explanations JSON
+
+// --- Agent 3: Monitor & Planner ---
+Student > Monitor & Planner Agent (StateGraph): [Input] Recent Activities
+Monitor & Planner Agent (StateGraph) > Gemini 2.5 Flash: Evaluate Progress
+Gemini 2.5 Flash > Monitor & Planner Agent (StateGraph): Re-plan
+Monitor & Planner Agent (StateGraph) > Student: [Output] Updated Roadmap JSON
 ```
-
-## Chú thích:
-- **Công cụ (Tools):** Các khối hình màu hồng đại diện cho các công cụ mà Agent sử dụng tương tác với thế giới bên ngoài (Database Nội bộ và API Từ điển Jisho bên ngoài).
-- **Tính tự chủ (Autonomy):** Cụm khối màu vàng thể hiện vòng lặp `Observe -> Re-plan -> Act`. Agent tự phát hiện dữ liệu nội bộ bị rỗng và tự động kích hoạt API bên ngoài để bù đắp.
-- **Xử lý LLM:** Khối màu xanh lam là nơi LLM (Gemini) phân tích dữ liệu và sinh câu trả lời. Hệ thống cũng có lớp phòng vệ (Regex/Text fallback) để chống lỗi JSON Truncation.

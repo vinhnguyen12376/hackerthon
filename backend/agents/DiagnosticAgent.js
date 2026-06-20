@@ -60,7 +60,19 @@ Phân tích dữ liệu trên và thiết kế lộ trình học tập tối ưu
     
     return JSON.parse(jsonStr);
   } catch (error) {
-    console.error("Diagnostic Agent Error:", error);
-    throw error;
+    console.error("Diagnostic Agent Error:", error.message);
+    // Graceful Fallback
+    return {
+      score: score || 0,
+      overall_assessment: "Hệ thống AI hiện đang bận hoặc quá tải. Đây là lộ trình mặc định tạm thời.",
+      strengths: ["Cần kiểm tra thêm"],
+      weaknesses: ["Cần ôn tập toàn diện"],
+      plan: [
+        { week: 1, focus: "Ôn tập Từ vựng cơ bản" },
+        { week: 2, focus: "Ôn tập Ngữ pháp cơ bản" },
+        { week: 3, focus: "Luyện đọc hiểu" },
+        { week: 4, focus: "Luyện nghe hiểu" }
+      ]
+    };
   }
 };
