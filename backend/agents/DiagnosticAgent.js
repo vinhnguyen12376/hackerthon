@@ -26,6 +26,12 @@ export const generateRoadmapWithAgent = async (detailedResults) => {
     return acc;
   }, {});
 
+  console.log(`\n=================================================`);
+  console.log(`🧠 [DIAGNOSTIC AGENT] Đang phân tích năng lực...`);
+  console.log(`- Điểm số: ${score}/100`);
+  console.log(`- Dữ liệu gửi cho Gemini: Đánh giá ${detailedResults.length} câu hỏi`);
+  console.log(`=================================================\n`);
+
   const prompt = `
 Bạn là Diagnostic & Planner Agent, một chuyên gia phân tích năng lực tiếng Nhật (JLPT N5-N2).
 Dưới đây là thống kê kết quả bài kiểm tra 30 câu ngẫu nhiên của học viên:
@@ -58,7 +64,12 @@ Phân tích dữ liệu trên và thiết kế lộ trình học tập tối ưu
       jsonStr = jsonStr.replace(/^\`\`\`json/g, '').replace(/\`\`\`$/g, '').trim();
     }
     
-    return JSON.parse(jsonStr);
+    const resultJSON = JSON.parse(jsonStr);
+
+    console.log(`✅ [DIAGNOSTIC AGENT] Gemini đã trả về kết quả!`);
+    console.log(`- Đánh giá tổng quan: "${resultJSON.overall_assessment.substring(0, 80)}..."\n`);
+
+    return resultJSON;
   } catch (error) {
     console.error("Diagnostic Agent Error:", error.message);
     // Graceful Fallback

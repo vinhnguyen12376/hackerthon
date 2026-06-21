@@ -292,7 +292,7 @@ export default function App() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!regName || !regEmail || !regDob || !regPhone || !regAddress || !regPassword || !regConfirmPassword) {
+    if (!regName || !regEmail || !regDob || !regPhone || !regPassword || !regConfirmPassword) {
       setRegError('Vui lòng điền đầy đủ các thông tin bắt buộc.');
       return;
     }
@@ -317,8 +317,7 @@ export default function App() {
           data: {
             full_name: regName,
             dob: regDob,
-            phone: regPhone,
-            address: regAddress
+            phone: regPhone
           }
         }
       });
@@ -919,18 +918,6 @@ export default function App() {
                       placeholder="0987654321"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
-                      required
-                      disabled={isAuthLoading}
-                    />
-                  </div>
-
-                  <div className="auth-input-group col-span-2">
-                    <label>Địa chỉ nhà</label>
-                    <input
-                      type="text"
-                      placeholder="470 Trần Đại Nghĩa, Đà Nẵng"
-                      value={regAddress}
-                      onChange={(e) => setRegAddress(e.target.value)}
                       required
                       disabled={isAuthLoading}
                     />

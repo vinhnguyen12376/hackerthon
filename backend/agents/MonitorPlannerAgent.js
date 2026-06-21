@@ -12,7 +12,12 @@ const GraphState = Annotation.Root({
 // 2. Node: Đánh giá sự tiến bộ
 async function evaluateProgress(state) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("Missing VITE_GEMINI_API_KEY");
+  if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
+
+  console.log(`\n=================================================`);
+  console.log(`📈 [MONITOR AGENT] Kích hoạt tiến trình đánh giá (evaluateProgress)...`);
+  console.log(`- Nhận dữ liệu: Lộ trình hiện tại & Kết quả bài test vừa xong.`);
+  console.log(`=================================================\n`);
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-2.5-flash", 
@@ -33,6 +38,7 @@ Họ đã cải thiện điểm yếu nào? Kỹ năng nào vẫn còn yếu ho�
 Hãy trả về một đoạn text phân tích thật ngắn gọn và súc tích.
   `;
   const res = await model.invoke(prompt);
+  console.log(`✅ [MONITOR AGENT] Phân tích xong: "${res.content.substring(0, 80)}..."\n`);
   return { evaluation: res.content };
 }
 
@@ -44,6 +50,11 @@ async function updateRoadmap(state) {
     apiKey: apiKey,
     temperature: 0.1
   });
+
+  console.log(`\n=================================================`);
+  console.log(`🗺️ [PLANNER AGENT] Bắt đầu thiết kế lại Lộ trình (updateRoadmap)...`);
+  console.log(`- Đang biên soạn lại JSON Lộ trình 4 tuần và Config bài test tiếp theo.`);
+  console.log(`=================================================\n`);
 
   const prompt = `
 Bạn là Monitor & Planner Agent. Dựa trên phân tích sau đây của bạn về học viên:
@@ -84,7 +95,9 @@ TRẢ VỀ DUY NHẤT một object JSON hợp lệ có ĐẦY ĐỦ các key sau
     jsonStr = jsonStr.replace(/^\`\`\`json/g, '').replace(/\`\`\`$/g, '').trim();
   }
   
-  return { newRoadmap: JSON.parse(jsonStr) };
+  const newRoadmap = JSON.parse(jsonStr);
+  console.log(`✅ [PLANNER AGENT] Lộ trình mới đã được tạo thành công!\n`);
+  return { newRoadmap };
 }
 
 // 4. Định nghĩa và Compile Graph
