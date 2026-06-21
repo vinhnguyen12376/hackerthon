@@ -24,7 +24,7 @@ export class GeminiLiveClient {
       // Setup session
       const setupMsg = {
         setup: {
-          model: "models/gemini-2.0-flash-exp",
+          model: "models/gemini-2.5-flash",
           systemInstruction: {
             parts: [{ text: "Bạn là Sakura, cô gái Nhật Bản 22 tuổi thân thiện. Hãy nói chuyện ngắn gọn bằng tiếng Nhật ở mức độ N5." }]
           }
@@ -45,10 +45,14 @@ export class GeminiLiveClient {
     this.ws.onerror = (err) => {
       console.error("WebSocket Error:", err);
       this.onStatusChange("error");
+      alert("Lỗi kết nối tới Máy chủ Gemini. Vui lòng kiểm tra lại API Key hoặc mạng của bạn.");
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
       this.onStatusChange("disconnected");
+      if (event.code !== 1000 && event.code !== 1005) {
+        alert(`Gemini Live API đã ngắt kết nối đột ngột (Mã lỗi: ${event.code}). Khả năng cao API Key của bạn không hợp lệ hoặc không có quyền dùng model gemini-2.0-flash-exp.`);
+      }
     };
 
     // Chuẩn bị AudioContext để phát giọng nói trả về
