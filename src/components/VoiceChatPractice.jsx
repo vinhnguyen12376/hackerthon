@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const VoiceChatPractice = () => {
   const [messages, setMessages] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected, listening, processing, speaking, error
+  const [errorMessage, setErrorMessage] = useState('');
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const genAIRef = useRef(null);
@@ -76,6 +77,7 @@ const VoiceChatPractice = () => {
     recognitionRef.current.onerror = (event) => {
       console.error("Mic error:", event.error);
       if (event.error !== 'no-speech') {
+        setErrorMessage('Mic error: ' + event.error);
         setConnectionStatus('error');
       } else {
         // Nếu không nghe thấy gì thì thử nghe lại
@@ -110,6 +112,7 @@ const VoiceChatPractice = () => {
 
       } catch (e) {
         console.error("Lỗi gọi Gemini:", e);
+        setErrorMessage('API Error: ' + e.message);
         setConnectionStatus('error');
       }
     };
@@ -138,6 +141,7 @@ const VoiceChatPractice = () => {
             try { 
               recognitionRef.current.start(); 
             } catch(e){
+              setErrorMessage('Lỗi khi bật lại Mic: ' + e.message);
               setConnectionStatus('error');
             }
           }
@@ -147,6 +151,7 @@ const VoiceChatPractice = () => {
 
     utterance.onerror = (e) => {
       console.error("Lỗi phát âm thanh:", e);
+      setErrorMessage('Lỗi phát giọng nói. Trình duyệt có thể không hỗ trợ giọng Nhật, hoặc bị gián đoạn.');
       setConnectionStatus('error');
     };
 
@@ -246,7 +251,7 @@ const VoiceChatPractice = () => {
                connectionStatus === 'listening' ? 'Đang nghe (Hãy nói tiếng Nhật)...' :
                connectionStatus === 'processing' ? 'Sakura đang suy nghĩ...' :
                connectionStatus === 'speaking' ? 'Sakura đang trả lời...' :
-               'Lỗi Micro / Lỗi API'}
+               (errorMessage || 'Lỗi Micro / Lỗi API')}
             </span>
             <p style={{ color: 'var(--text-light)', fontSize: '15px' }}>
               {connectionStatus === 'listening' ? 'Hãy nói "Konnichiwa" (こんにちは)' : 

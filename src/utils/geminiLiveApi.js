@@ -16,7 +16,7 @@ export class GeminiLiveClient {
     if (!apiKey) throw new Error("Missing Gemini API Key");
 
     const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
-    
+
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
@@ -93,7 +93,7 @@ export class GeminiLiveClient {
       // Bắt buộc sample rate 16kHz cho Gemini API
       this.micAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
       const source = this.micAudioContext.createMediaStreamSource(stream);
-      
+
       const workletCode = `
         class PCMProcessor extends AudioWorkletProcessor {
           process(inputs) {
@@ -114,7 +114,7 @@ export class GeminiLiveClient {
       const blob = new Blob([workletCode], { type: 'application/javascript' });
       const url = URL.createObjectURL(blob);
       await this.micAudioContext.audioWorklet.addModule(url);
-      
+
       this.processor = new AudioWorkletNode(this.micAudioContext, 'pcm-processor');
       this.processor.port.onmessage = (e) => {
         const arrayBuffer = e.data;
@@ -163,7 +163,7 @@ export class GeminiLiveClient {
       for (let i = 0; i < len; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
       }
-      
+
       // Chuyển đổi PCM 16-bit sang Float32Array
       const int16Array = new Int16Array(bytes.buffer);
       const float32Array = new Float32Array(int16Array.length);

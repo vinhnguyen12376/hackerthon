@@ -41,7 +41,9 @@ Chi tiết từng kỹ năng:
 ${JSON.stringify(skillStats, null, 2)}
 
 Nhiệm vụ của bạn:
-Phân tích dữ liệu trên và thiết kế lộ trình học tập tối ưu. Hãy TRẢ VỀ DUY NHẤT một chuỗi JSON hợp lệ (không kèm theo bất kỳ văn bản giải thích hay markdown \`\`\` nào khác), với cấu trúc chính xác như sau:
+Phân tích dữ liệu trên và thiết kế lộ trình học tập tối ưu. Hãy TRẢ VỀ DUY NHẤT một chuỗi JSON hợp lệ (không kèm theo bất kỳ văn bản giải thích hay markdown \`\`\` nào khác), với cấu trúc chính xác như sau.
+ĐẶC BIỆT LƯU Ý: KHÔNG ĐƯỢC sử dụng ký tự xuống dòng (Enter/Newline) trực tiếp bên trong nội dung của các chuỗi (string). Mọi chuỗi phải nằm trên 1 dòng. Nếu cần xuống dòng trong văn bản, phải viết là \\n.
+Cấu trúc JSON bắt buộc:
 {
   "score": ${score},
   "overall_assessment": "<Đánh giá tổng quan năng lực hiện tại một cách chuyên nghiệp, khoảng 2-3 câu>",
@@ -56,10 +58,11 @@ Phân tích dữ liệu trên và thiết kế lộ trình học tập tối ưu
 }
 `;
 
+  let jsonStr = "";
   try {
     const res = await model.invoke(prompt);
     // Xử lý dọn dẹp chuỗi trả về phòng trường hợp LLM vẫn bọc markdown
-    let jsonStr = res.content.trim();
+    jsonStr = res.content.trim();
     if (jsonStr.startsWith('\`\`\`json')) {
       jsonStr = jsonStr.replace(/^\`\`\`json/g, '').replace(/\`\`\`$/g, '').trim();
     }
@@ -72,6 +75,9 @@ Phân tích dữ liệu trên và thiết kế lộ trình học tập tối ưu
     return resultJSON;
   } catch (error) {
     console.error("Diagnostic Agent Error:", error.message);
+    if (typeof jsonStr !== 'undefined') {
+      console.error("Raw JSON Output that caused error:\n", jsonStr);
+    }
     // Graceful Fallback
     return {
       score: score || 0,
