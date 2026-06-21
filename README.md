@@ -4,7 +4,7 @@ Nihongo Mentor AI là một hệ thống ôn thi tiếng Nhật JLPT N5 tích h�
 
 Dự án được xây dựng cho Vòng chung kết Hackathon AIDEV Summer 2026.
 
-## 🌟 Tính năng cốt lõi (Đạt 100% Yêu cầu Hackathon)
+## 🌟 Tính năng cốt lõi
 
 1. **Tính Tự Chủ (Autonomy - Vòng lặp Cứu hộ Kiến thức):**
    - Agent sở hữu vòng lặp thông minh `Act → Observe → Re-plan`.
